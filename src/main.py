@@ -17,6 +17,11 @@ Description:
 
 from router import Router
 from pricing import PricingCalculator
+from wallet import Wallet
+from providers.gpt_provider import GPTProvider
+from providers.image_provider import ImageProvider
+from providers.audio_provider import AudioProvider
+from providers.video_provider import VideoProvider
 
 
 def main():
@@ -36,26 +41,52 @@ def main():
     # Register example providers
     def gpt_provider(prompt: str, **kwargs):
         """A mock provider that returns a formatted string for demonstration."""
-        return f"[GPT provider] Generated response for prompt: {prompt}"
+    # Initialize wallet, pricing calculator, and router
+    wallet = Wallet(initial_balance=100)
+    pricing = PricingCalculator()
+    router = Router()
 
-    def imagen_provider(prompt: str, **kwargs):
-        """A mock provider that returns a formatted string for demonstration."""
-        return f"[Imagen provider] Generated images for prompt: {prompt}"
+    # Register rates for providers (cost per unit)
+    pricing.register_rate('gpt', 1)  # cost per word
+    pricing.register_rate('image', 10)  # cost per image generation
+    pricing.register_rate('audio', 5)  # cost per audio generation
+    pricing.register_rate('video', 20)  # cost per video generation
 
-    router.register_provider('gpt', gpt_provider)
-    router.register_provider('imagen', imagen_provider)
+    # Initialize provider instances
+    gpt_provider = GPTProvider(name='gpt')
+    image_provider = ImageProvider(name='image')
+    audio_provider = AudioProvider(name='audio')
+    video_provider = VideoProvider(name='video')
 
-    # Example user input
-    prompt = "Hello AI"
-    model = 'gpt'
+    # Register providers in the router
+    router.register_provider(gpt_provider)
+    router.register_provider(image_provider)
+    router.register_provider(audio_provider)
+    router.register_provider(video_provider)
 
-    # Estimate cost (assuming cost per word) and execute request
-    cost_estimate = pricing.estimate_cost(model, len(prompt.split()))
-    response = router.route_request(model, prompt)
+    # Prompt user for input
+    model = input("Enter model type (gpt, image, audio, or video): ")
+    prompt = input("Enter your prompt: ")
 
-    print(f"Estimated cost: {cost_estimate} tokens")
-    print(f"Response: {response}")
+    # Determine cost units based on model type
+    if model.lower() == 'gpt':
+        cost_units = len(prompt.split())
+    else:
+        cost_units = 1
 
+    # Estimate cost
+    cost = pricing.estimate_cost(model.lower(), cost_units)
+    print(f"Estimated cost for {model} request: {cost} credits")
 
-if __name__ == "__main__":
+    # Check if the wallet can afford the request
+    if wallet.can_afford(cost):
+        wallet.deduct(cost)
+        # Create request dictionary for router
+        request = {'type': model.lower(), 'prompt': prompt}
+        response = router.route_request(request)
+        print(f"Response from {model}: {response}")
+        print(f"Remaining balance: {wallet.get_balance()} credits")
+    else:
+        print("Insufficient credits in wallet")
+
     main()
