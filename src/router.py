@@ -35,5 +35,24 @@ class Router:
             object: Selected provider instance.
             object: Выбранный экземпляр поставщика.
         """
-        # TODO: Implement routing logic based on provider attributes and request parameters
-        return None
+        
+                # Determine the type of content requested
+        # Определяем тип запрошенного контента
+        request_type = request.get('type')
+        prompt = request.get('prompt', '')
+
+        # Try to find a provider whose class name contains the request type
+        # Пытаемся найти провайдера, название класса которого содержит тип запроса
+        if request_type:
+            for provider in self.providers:
+                if request_type.lower() in provider.__class__.__name__.lower():
+                    return provider(prompt)
+
+        # Fallback: if any providers are registered, use the first one
+        # Запасной вариант: если есть зарегистрированные провайдеры, используем первого
+        if self.providers:
+            return self.providers[0](prompt)
+
+        # If no providers are registered, return None
+        # Если провайдеров нет, возвращаем None
+                return None
