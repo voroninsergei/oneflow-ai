@@ -1,0 +1,50 @@
+# Kustomization для управления всеми манифестами
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: oneflow-ai
+
+# Общие метки для всех ресурсов
+commonLabels:
+  app: oneflow-ai
+  managed-by: kustomize
+
+# Общие аннотации
+commonAnnotations:
+  documentation: "https://docs.oneflow-ai.com"
+  support: "support@oneflow-ai.com"
+
+# Порядок применения ресурсов
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - additional-resources.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - ingress.yaml
+
+# Генераторы имён для ConfigMap и Secret
+# (чтобы при изменении пересоздавались поды)
+configMapGenerator:
+  - name: oneflow-config
+    files:
+      - config/app.conf
+    behavior: merge
+
+secretGenerator:
+  - name: oneflow-secrets
+    envs:
+      - secrets/.env.production
+    type: Opaque
+
+# Патчи для разных окружений
+patchesStrategicMerge:
+  - patches/production.yaml
+
+# Images (можно переопределять версии)
+images:
+  - name: oneflow-ai
+    newName: your-registry.io/oneflow-ai
+    newTag: 2.0.0
