@@ -1,32 +1,3 @@
-"""
-Pricing module for OneFlow.AI.
-Модуль расчета стоимости для OneFlow.AI.
-
-This module defines the PricingCalculator class which estimates the cost of AI operations based on provider pricing and request parameters.
-Этот модуль определяет класс PricingCalculator, который оценивает стоимость операций ИИ на основе тарифов поставщиков и параметров запроса.
-"""
-
-class PricingCalculator:
-    """Calculate estimated cost for AI operations.
-    Рассчитывает ориентировочную стоимость операций ИИ.
-    """
-
-    def __init__(self):
-        """Initialize pricing calculator with provider rates.
-        Инициализация калькулятора стоимости тарифами поставщиков.
-        """
-        self.rates = {}
-
-    def register_rate(self, provider_name: str, rate: float) -> None:
-        """Register rate per unit for a provider.
-        Регистрация ставки за единицу для поставщика.
-
-        Args:
-            provider_name (str): Provider identifier.
-            rate (float): Cost per unit.
-        """
-        self.rates[provider_name] = rate
-
     def estimate_cost(self, provider_name: str, units: float) -> float:
         """Estimate cost for given provider and units.
         Оценка стоимости для заданного поставщика и количества единиц.
@@ -36,7 +7,39 @@ class PricingCalculator:
             units (float): Number of units.
 
         Returns:
-            float: Estimated cost.
+            float: Estimated cost, or 0.0 if provider not found.
         """
+        if provider_name not in self.rates:
+            return 0.0
         rate = self.rates.get(provider_name, 0.0)
         return rate * units
+    
+    def get_rate(self, provider_name: str) -> float:
+        """Get rate for a provider.
+        
+        Args:
+            provider_name: Provider name.
+        
+        Returns:
+            float: Rate per unit, or 0.0 if not found.
+        """
+        return self.rates.get(provider_name, 0.0)
+    
+    def has_provider(self, provider_name: str) -> bool:
+        """Check if provider exists.
+        
+        Args:
+            provider_name: Provider name.
+        
+        Returns:
+            bool: True if provider exists.
+        """
+        return provider_name in self.rates
+    
+    def get_all_rates(self):
+        """Get all registered rates.
+        
+        Returns:
+            dict: All provider rates.
+        """
+        return self.rates.copy()
