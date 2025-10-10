@@ -9,7 +9,60 @@ This module provides real implementations for AI provider integrations.
 import os
 import json
 from typing import Optional, Dict, Any
-from api_keys_module import get_key_manager
+
+
+# Inline KeyManager for compatibility
+class KeyManager:
+    """Simple API key manager."""
+    
+    def __init__(self):
+        self.keys = {}
+        self._load_keys()
+    
+    def _load_keys(self):
+        """Load API keys from file and environment."""
+        # Try to load from .api_keys.json
+        if os.path.exists('.api_keys.json'):
+            try:
+                with open('.api_keys.json', 'r') as f:
+                    file_data = json.load(f)
+                    for provider, value in file_data.items():
+                        if isinstance(value, dict) and 'api_key' in value:
+                            self.keys[provider] = value['api_key']
+                        elif isinstance(value, str):
+                            self.keys[provider] = value
+            except Exception as e:
+                print(f"Warning: Could not load API keys from file: {e}")
+        
+        # Override with environment variables
+        env_keys = {
+            'openai': os.getenv('OPENAI_API_KEY'),
+            'anthropic': os.getenv('ANTHROPIC_API_KEY'),
+            'stability': os.getenv('STABILITY_API_KEY'),
+            'elevenlabs': os.getenv('ELEVENLABS_API_KEY'),
+            'runway': os.getenv('RUNWAY_API_KEY'),
+        }
+        
+        for provider, key in env_keys.items():
+            if key:
+                self.keys[provider] = key
+    
+    def get_key(self, provider: str) -> Optional[str]:
+        """Get API key for provider."""
+        return self.keys.get(provider.lower())
+    
+    def has_key(self, provider: str) -> bool:
+        """Check if API key exists."""
+        return provider.lower() in self.keys and bool(self.keys[provider.lower()])
+
+
+# Global key manager instance
+_key_manager = KeyManager()
+
+
+def get_key_manager():
+    """Get global key manager instance."""
+    return _key_manager
 
 
 class RealGPTProvider:
