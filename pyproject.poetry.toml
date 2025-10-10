@@ -1,0 +1,120 @@
+# pyproject.toml - Poetry Edition
+# Alternative to setuptools, includes lock file support
+
+[tool.poetry]
+name = "oneflow-ai"
+version = "2.0.0"
+description = "AI Model Aggregator with pricing, routing, analytics & authentication"
+authors = ["Sergey Voronin <voroninsergeiai@gmail.com>"]
+license = "Proprietary"
+readme = "README.md"
+homepage = "https://github.com/voroninsergeiai/oneflow-ai"
+repository = "https://github.com/voroninsergeiai/oneflow-ai"
+keywords = ["ai", "llm", "api", "aggregator", "openai", "anthropic"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+# Core (always installed)
+pytest = "^7.0.0"
+
+# Optional dependencies groups
+openai = {version = "^1.0.0", optional = true}
+anthropic = {version = "^0.5.0", optional = true}
+requests = {version = "^2.31.0", optional = true}
+pillow = {version = "^10.0.0", optional = true}
+
+fastapi = {version = "^0.104.0", optional = true}
+uvicorn = {version = "^0.24.0", extras = ["standard"], optional = true}
+pydantic = {version = "^2.0.0", optional = true}
+python-multipart = {version = "^0.0.6", optional = true}
+aiofiles = {version = "^23.0.0", optional = true}
+
+sqlalchemy = {version = "^2.0.0", optional = true}
+psycopg2-binary = {version = "^2.9.9", optional = true}
+
+python-jose = {version = "^3.3.0", extras = ["cryptography"], optional = true}
+passlib = {version = "^1.7.4", extras = ["bcrypt"], optional = true}
+PyJWT = {version = "^2.8.0", optional = true}
+
+redis = {version = "^5.0.0", optional = true}
+celery = {version = "^5.3.0", optional = true}
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = "^7.0.0"
+pytest-cov = "^4.1.0"
+pytest-asyncio = "^0.21.0"
+pytest-mock = "^3.12.0"
+
+# Code quality
+black = "^23.0.0"
+flake8 = "^6.1.0"
+mypy = "^1.6.0"
+isort = "^5.12.0"
+ruff = "^0.1.0"
+bandit = "^1.7.5"
+
+# Pre-commit
+pre-commit = "^3.5.0"
+
+# Type stubs
+types-requests = "^2.31.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.5.0"
+mkdocs-material = "^9.4.0"
+mkdocstrings = {version = "^0.24.0", extras = ["python"]}
+
+[tool.poetry.extras]
+api = ["openai", "anthropic", "requests", "pillow"]
+web = ["fastapi", "uvicorn", "pydantic", "python-multipart", "aiofiles"]
+db = ["sqlalchemy"]
+postgres = ["sqlalchemy", "psycopg2-binary"]
+auth = ["python-jose", "passlib", "PyJWT"]
+cache = ["redis"]
+tasks = ["celery"]
+all = [
+    "openai", "anthropic", "requests", "pillow",
+    "fastapi", "uvicorn", "pydantic", "python-multipart", "aiofiles",
+    "sqlalchemy", "psycopg2-binary",
+    "python-jose", "passlib", "PyJWT",
+    "redis", "celery"
+]
+
+[tool.poetry.scripts]
+oneflow = "oneflow.cli:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# Tool configurations (same as setuptools version)
+[tool.black]
+line-length = 120
+target-version = ['py310', 'py311', 'py312']
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--showlocals"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
