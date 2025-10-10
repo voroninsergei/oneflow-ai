@@ -1,6 +1,6 @@
 # ============================================================================
 # Multi-stage Dockerfile for OneFlow.AI
-# Optimized for production deployment
+# Optimized for production deployment with security and performance best practices
 # ============================================================================
 
 # ============================================================================
@@ -10,30 +10,35 @@ FROM python:3.11-slim as builder
 
 WORKDIR /build
 
-# Install build dependencies
+# Install build dependencies in a single layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     make \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Copy requirements first for better caching
+# Copy only requirements first for optimal layer caching
 COPY requirements.txt .
 
 # Create virtual environment and install dependencies
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Install dependencies with optimizations
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + && \
+    find /opt/venv -type f -name '*.pyc' -delete && \
+    find /opt/venv -type f -name '*.pyo' -delete
 
 # ============================================================================
 # Stage 2: Runtime
 # ============================================================================
 FROM python:3.11-slim
 
-# Metadata labels
+# Metadata labels (OCI standard)
 LABEL org.opencontainers.image.title="OneFlow.AI" \
       org.opencontainers.image.description="AI Model Aggregator with Pricing, Routing, and Analytics" \
       org.opencontainers.image.vendor="Sergey Voronin" \
@@ -46,65 +51,89 @@ ARG VERSION=2.0.0
 ARG BUILD_DATE
 ARG VCS_REF
 
-# Environment variables
+# Environment variables - optimized for production
 ENV VERSION=${VERSION} \
     BUILD_DATE=${BUILD_DATE} \
     VCS_REF=${VCS_REF} \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH="/opt/venv/bin:$PATH"
 
-# Install runtime dependencies only
+# Install runtime dependencies only (minimal footprint)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Create non-root user
-RUN useradd -m -u 1000 -s /bin/bash oneflow && \
-    mkdir -p /app /app/logs /app/data && \
+# Create non-root user with specific UID/GID for security
+RUN groupadd -g 1000 oneflow && \
+    useradd -r -u 1000 -g oneflow -m -s /bin/bash -d /app oneflow && \
+    mkdir -p /app/logs /app/data && \
     chown -R oneflow:oneflow /app
 
-# Copy virtual environment from builder
+# Copy virtual environment from builder (optimized with --chown)
 COPY --from=builder --chown=oneflow:oneflow /opt/venv /opt/venv
 
 # Set working directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=oneflow:oneflow src/ ./src/
-COPY --chown=oneflow:oneflow web_server.py .
-COPY --chown=oneflow:oneflow setup.py .
+# Copy application code in optimal order (least to most frequently changed)
 COPY --chown=oneflow:oneflow README.md .
+COPY --chown=oneflow:oneflow setup.py .
+COPY --chown=oneflow:oneflow web_server.py .
+COPY --chown=oneflow:oneflow src/ ./src/
 
 # Switch to non-root user
 USER oneflow
 
-# Add virtual environment to PATH
-ENV PATH="/opt/venv/bin:$PATH"
-
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check with proper intervals
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Default command
-CMD ["uvicorn", "web_server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Default command with production-ready settings
+CMD ["uvicorn", "web_server:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4", \
+     "--log-level", "info", \
+     "--no-access-log"]
 
 # ============================================================================
-# Usage:
+# Build & Run Instructions:
 # 
-# Build:
-#   docker build -t oneflow-ai:latest .
+# Build with build arguments:
+#   docker build \
+#     --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+#     --build-arg VCS_REF=$(git rev-parse --short HEAD) \
+#     -t oneflow-ai:latest \
+#     -t oneflow-ai:2.0.0 .
 #
-# Run:
-#   docker run -d -p 8000:8000 \
+# Run with environment variables:
+#   docker run -d \
+#     --name oneflow-ai \
+#     -p 8000:8000 \
 #     -e DATABASE_URL=postgresql://user:pass@host/db \
+#     -e LOG_LEVEL=info \
+#     --restart unless-stopped \
+#     --memory="2g" \
+#     --cpus="2" \
 #     oneflow-ai:latest
 #
-# Pull from GHCR:
+# Run with docker-compose:
+#   docker-compose up -d
+#
+# Pull from GitHub Container Registry:
 #   docker pull ghcr.io/voroninsergei/oneflow-ai:latest
+#
+# Build for multiple platforms:
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#     -t ghcr.io/voroninsergei/oneflow-ai:latest --push .
 # ============================================================================
