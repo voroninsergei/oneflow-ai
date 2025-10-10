@@ -1,7 +1,9 @@
 """
-Quick project setup: installs deps, seeds config and api keys.
+Quick project setup: installs deps, provides guidance on API keys.
 """
-import subprocess, sys, os
+import subprocess
+import sys
+import os
 
 def sh(cmd):
     print("+", cmd)
@@ -10,13 +12,26 @@ def sh(cmd):
         sys.exit(r)
 
 def main():
-    if not os.path.exists(".api_keys.example.json"):
-        open(".api_keys.example.json","w").write('{"openai":{"api_key":""},"anthropic":{"api_key":""}}')
+    # Create example config without API keys
     if not os.path.exists("config.example.json"):
-        open("config.example.json","w").write('{"region":"us-east","pricing":{}}')
+        with open("config.example.json", "w", encoding="utf-8") as f:
+            f.write('{"region":"us-east","pricing":{}}')
+    
+    # Install dependencies
     sh(f"{sys.executable} -m pip install -r requirements.txt")
     sh(f"{sys.executable} -m pip install -e .")
-    print("Quick setup complete. Edit .api_keys.json using: python setup_keys.py")
+    
+    print("\n" + "="*70)
+    print("Quick setup complete!")
+    print("="*70)
+    print("\nAPI Key Configuration (choose one method):")
+    print("\n1. RECOMMENDED: Use environment variables")
+    print("   export OPENAI_API_KEY='your-key-here'")
+    print("   export ANTHROPIC_API_KEY='your-key-here'")
+    print("\n2. Alternative: Use secure config file")
+    print("   python setup_keys.py")
+    print("\nSee README.md for detailed instructions.")
+    print("="*70 + "\n")
 
 if __name__ == "__main__":
     main()
