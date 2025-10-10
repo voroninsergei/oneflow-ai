@@ -1,0 +1,147 @@
+# ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oneflow-ai
+  namespace: oneflow-ai
+  labels:
+    app: oneflow-ai
+automountServiceAccountToken: true
+
+---
+# PodDisruptionBudget - обеспечивает минимальное количество доступных подов
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oneflow-ai-pdb
+  namespace: oneflow-ai
+  labels:
+    app: oneflow-ai
+spec:
+  minAvailable: 2  # Минимум 2 пода всегда доступны
+  # Альтернатива: maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: oneflow-ai
+      component: api
+
+---
+# NetworkPolicy - ограничение сетевого доступа
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: oneflow-ai-netpol
+  namespace: oneflow-ai
+spec:
+  podSelector:
+    matchLabels:
+      app: oneflow-ai
+  policyTypes:
+  - Ingress
+  - Egress
+  
+  ingress:
+  # Разрешить входящий трафик от Ingress Controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  
+  # Разрешить от подов в том же namespace
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8000
+  
+  egress:
+  # DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  
+  # PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+  
+  # Redis
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  
+  # Внешние API (HTTPS)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  
+  # HTTP для внешних API
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 80
+
+---
+# ResourceQuota - ограничение ресурсов namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: oneflow-ai-quota
+  namespace: oneflow-ai
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    limits.cpu: "20"
+    limits.memory: "40Gi"
+    persistentvolumeclaims: "10"
+    services.loadbalancers: "1"
+
+---
+# LimitRange - ограничения по умолчанию для подов
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: oneflow-ai-limits
+  namespace: oneflow-ai
+spec:
+  limits:
+  - max:
+      cpu: "2"
+      memory: "4Gi"
+    min:
+      cpu: "100m"
+      memory: "128Mi"
+    default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "200m"
+      memory: "256Mi"
+    type: Container
+  
+  - max:
+      cpu: "4"
+      memory: "8Gi"
+    min:
+      cpu: "200m"
+      memory: "256Mi"
+    type: Pod
