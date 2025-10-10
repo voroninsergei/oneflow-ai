@@ -1,0 +1,280 @@
+# ============================================
+# OneFlow.AI - Pre-commit hooks
+# Автоматическая проверка безопасности перед коммитом
+# ============================================
+
+# Установка:
+#   pip install pre-commit
+#   pre-commit install
+
+# Использование:
+#   pre-commit run --all-files  # Проверить все файлы
+#   pre-commit run              # Проверить staged файлы
+
+repos:
+  # ============================================
+  # Базовые проверки
+  # ============================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Удаление trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      
+      # Проверка окончания файлов
+      - id: end-of-file-fixer
+      
+      # Проверка YAML
+      - id: check-yaml
+        args: [--unsafe]  # Для docker-compose.yml
+      
+      # Проверка JSON
+      - id: check-json
+      
+      # Проверка TOML
+      - id: check-toml
+      
+      # Проверка XML
+      - id: check-xml
+      
+      # Проверка конфликтов merge
+      - id: check-merge-conflict
+      
+      # Проверка размера файлов (максимум 500KB)
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      
+      # Проверка case conflicts
+      - id: check-case-conflict
+      
+      # Проверка исполняемых скриптов
+      - id: check-executables-have-shebangs
+      
+      # Проверка симлинков
+      - id: check-symlinks
+      
+      # Обнаружение приватных ключей
+      - id: detect-private-key
+        name: Detect Private Keys
+        description: Проверка на наличие приватных ключей
+      
+      # Проверка AWS credentials
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+
+  # ============================================
+  # Проверка секретов (критично!)
+  # ============================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        name: Detect Secrets
+        args: 
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            package-lock.json|
+            poetry.lock|
+            .*\.ipynb
+          )$
+
+  # ============================================
+  # Gitleaks - поиск секретов
+  # ============================================
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+        name: Gitleaks Secret Scanner
+        description: Сканирование секретов с помощью Gitleaks
+
+  # ============================================
+  # Python - форматирование и линтинг
+  # ============================================
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Black Code Formatter
+        language_version: python3.11
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort - Sort imports
+        args: [--profile, black]
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: Flake8 Linter
+        args:
+          - --max-line-length=120
+          - --extend-ignore=E203,W503
+        additional_dependencies:
+          - flake8-docstrings
+          - flake8-bugbear
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: MyPy Type Checker
+        args: [--ignore-missing-imports]
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+
+  # ============================================
+  # Безопасность Python
+  # ============================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        name: Bandit Security Linter
+        args:
+          - -ll  # Только средний и высокий уровень
+          - --recursive
+          - src
+        exclude: tests/
+
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.3
+    hooks:
+      - id: python-safety-dependencies-check
+        name: Safety - проверка зависимостей
+        files: requirements.txt
+
+  # ============================================
+  # Docker
+  # ============================================
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Hadolint - Docker linter
+
+  # ============================================
+  # Markdown
+  # ============================================
+  - repo: https://github.com/markdownlint/markdownlint
+    rev: v0.12.0
+    hooks:
+      - id: markdownlint
+        name: Markdownlint
+        args: [--style, .markdownlint.yml]
+
+  # ============================================
+  # Проверка коммит-сообщений
+  # ============================================
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        name: Commitizen Check
+        stages: [commit-msg]
+
+  # ============================================
+  # Shell Scripts
+  # ============================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: ShellCheck
+
+  # ============================================
+  # YAML Lint
+  # ============================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        name: YAML Lint
+        args: [-c=.yamllint.yml]
+
+  # ============================================
+  # Terraform
+  # ============================================
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.86.0
+    hooks:
+      - id: terraform_fmt
+        name: Terraform Format
+      - id: terraform_validate
+        name: Terraform Validate
+      - id: terraform_tflint
+        name: TFLint
+
+# ============================================
+# Кастомные хуки для OneFlow.AI
+# ============================================
+  - repo: local
+    hooks:
+      # Проверка наличия .api_keys.json
+      - id: check-api-keys-json
+        name: Check for .api_keys.json
+        entry: bash -c 'if git diff --cached --name-only | grep -q "\.api_keys\.json"; then echo "❌ ОШИБКА: .api_keys.json не должен быть в git!"; exit 1; fi'
+        language: system
+        pass_filenames: false
+      
+      # Проверка наличия .env
+      - id: check-env-file
+        name: Check for .env
+        entry: bash -c 'if git diff --cached --name-only | grep -qE "^\.env$"; then echo "❌ ОШИБКА: .env не должен быть в git!"; exit 1; fi'
+        language: system
+        pass_filenames: false
+      
+      # Проверка паттернов секретов
+      - id: check-secret-patterns
+        name: Check Secret Patterns
+        entry: bash -c 'if git diff --cached | grep -iE "(api[_-]?key|secret[_-]?key|password|token).*=.*['\''\"](sk-|s\.|sec-)"; then echo "⚠️  ВНИМАНИЕ: Возможно обнаружен секрет!"; exit 1; fi'
+        language: system
+        pass_filenames: false
+      
+      # Проверка requirements.txt
+      - id: check-requirements
+        name: Check requirements.txt
+        entry: python -m pip check
+        language: system
+        pass_filenames: false
+        files: requirements.txt
+      
+      # Проверка конфигурации
+      - id: validate-config
+        name: Validate Config
+        entry: python -c "from src.config import Config; c = Config(); print('✓ Config valid')"
+        language: system
+        pass_filenames: false
+        files: src/config.py
+
+# ============================================
+# Конфигурация
+# ============================================
+default_language_version:
+  python: python3.11
+
+fail_fast: false
+
+# Исключения
+exclude: |
+  (?x)^(
+    \.git/|
+    \.venv/|
+    venv/|
+    __pycache__/|
+    .*\.egg-info/|
+    dist/|
+    build/|
+    \.pytest_cache/|
+    \.mypy_cache/|
+    node_modules/|
+    \.secrets\.baseline|
+    \.api_keys\.json\.backup.*
+  )$
