@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oneflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: oneflow}
+  template:
+    metadata:
+      labels: {app: oneflow}
+    spec:
+      containers:
+        - name: web
+          image: oneflow-ai:latest
+          ports: [{containerPort: 8000}]

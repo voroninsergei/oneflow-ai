@@ -1,0 +1,39 @@
+# OneFlow.AI - Complete Requirements
+# Полные зависимости OneFlow.AI
+
+# Core dependencies | Основные зависимости
+pytest>=6.0
+
+# Database | База данных
+sqlalchemy>=2.0.0
+
+# Web Server | Веб-сервер
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# Optional: Real API Integration | Опционально: Реальные API
+# Uncomment if using real AI providers
+# Раскомментируйте если используете реальные AI провайдеры
+
+# openai>=1.0.0                    # OpenAI GPT, DALL-E
+# anthropic>=0.5.0                 # Anthropic Claude
+# requests>=2.31.0                 # For Stability AI, ElevenLabs
+# pillow>=10.0.0                   # Image processing
+
+# Optional: PostgreSQL | Опционально: PostgreSQL
+# psycopg2-binary>=2.9.9          # PostgreSQL adapter
+
+# Optional: Development tools | Опционально: Инструменты разработки
+# pytest-cov>=4.1.0               # Test coverage
+# black>=23.0.0                   # Code formatting
+# flake8>=6.1.0                   # Linting
+# mypy>=1.6.0                     # Type checking
+
+# Optional: Advanced features | Опционально: Расширенные возможности
+# redis>=5.0.0                    # Caching
+# celery>=5.3.0                   # Task queue
+# python-jose[cryptography]>=3.3.0  # JWT tokens
+# passlib[bcrypt]>=1.7.4          # Password hashing
+# python-multipart>=0.0.6         # File uploads
+# aiofiles>=23.0.0                # Async file operations
