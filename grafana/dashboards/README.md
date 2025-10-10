@@ -237,4 +237,207 @@ You can import community dashboards:
 1. **Node Exporter Full**: Dashboard ID `1860`
    - System metrics (CPU, Memory, Disk, Network)
 
-2. **Docker Container & Host Metrics**: Dashboard ID `
+2. **Docker Container & Host Metrics**: Dashboard ID `193`
+   - Container metrics from cAdvisor
+
+3. **Prometheus Stats**: Dashboard ID `3662`
+   - Prometheus internal metrics
+
+### Import Process
+
+1. Go to Grafana → **Dashboards** → **Import**
+2. Enter dashboard ID
+3. Select **Prometheus** as data source
+4. Click **Import**
+
+## 🔧 Dashboard Variables
+
+Add these variables for filtering:
+
+### Provider Variable
+```
+Query: label_values(oneflow_requests_total, provider)
+Name: provider
+Type: Query
+Multi-value: Yes
+Include All: Yes
+```
+
+### Time Range Variable
+```
+Type: Interval
+Name: interval
+Values: 1m,5m,10m,30m,1h,6h,12h,1d
+Auto: Yes
+```
+
+### Environment Variable
+```
+Name: environment
+Type: Custom
+Values: production,staging,development
+```
+
+## 📊 Panel Examples in JSON
+
+### Error Budget Panel (Gauge)
+
+```json
+{
+  "type": "gauge",
+  "title": "Error Budget Remaining",
+  "targets": [
+    {
+      "expr": "(0.001 - (1 - (sum(rate(oneflow_requests_total{status=~\"success|2..\"}[30d])) / sum(rate(oneflow_requests_total[30d]))))) / 0.001 * 100",
+      "refId": "A"
+    }
+  ],
+  "fieldConfig": {
+    "defaults": {
+      "unit": "percent",
+      "min": 0,
+      "max": 100,
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          { "value": 0, "color": "red" },
+          { "value": 20, "color": "orange" },
+          { "value": 50, "color": "yellow" },
+          { "value": 80, "color": "green" }
+        ]
+      }
+    }
+  }
+}
+```
+
+### Request Rate Panel (Time Series)
+
+```json
+{
+  "type": "timeseries",
+  "title": "Request Rate",
+  "targets": [
+    {
+      "expr": "sum(rate(oneflow_requests_total[5m]))",
+      "legendFormat": "Total Requests",
+      "refId": "A"
+    },
+    {
+      "expr": "sum(rate(oneflow_requests_total{status='success'}[5m]))",
+      "legendFormat": "Successful",
+      "refId": "B"
+    },
+    {
+      "expr": "sum(rate(oneflow_requests_total{status='error'}[5m]))",
+      "legendFormat": "Errors",
+      "refId": "C"
+    }
+  ],
+  "fieldConfig": {
+    "defaults": {
+      "unit": "reqps",
+      "custom": {
+        "drawStyle": "line",
+        "fillOpacity": 10
+      }
+    }
+  }
+}
+```
+
+## 🎯 Alert Annotations
+
+Add alert annotations to dashboards:
+
+```json
+{
+  "annotations": {
+    "list": [
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "ALERTS{alertstate=\"firing\"}",
+        "iconColor": "red",
+        "name": "Active Alerts",
+        "tagKeys": "alertname,severity",
+        "textFormat": "{{alertname}}: {{annotations.summary}}",
+        "titleFormat": "Alert"
+      }
+    ]
+  }
+}
+```
+
+## 📱 Responsive Design Tips
+
+1. Use **rows** to organize panels logically
+2. Set panel heights appropriately (6-8 units for graphs)
+3. Use **stat** panels for single values
+4. Use **time series** for trends
+5. Use **tables** for detailed breakdowns
+6. Keep critical metrics above the fold
+
+## 🔍 Useful Panel Configurations
+
+### SLO Compliance Table
+
+```promql
+# Query for table
+label_replace(
+  (
+    1 - (
+      sum(rate(oneflow_requests_total{status=~"success|2.."}[30d])) by (provider)
+      /
+      sum(rate(oneflow_requests_total[30d])) by (provider)
+    )
+  ) < bool 0.001,
+  "status", "✅ Compliant", "", ""
+)
+or
+label_replace(
+  (
+    1 - (
+      sum(rate(oneflow_requests_total{status=~"success|2.."}[30d])) by (provider)
+      /
+      sum(rate(oneflow_requests_total[30d])) by (provider)
+    )
+  ) >= bool 0.001,
+  "status", "❌ Violation", "", ""
+)
+```
+
+### Burn Rate Heatmap
+
+- **Type**: Heatmap
+- **Data format**: Time series buckets
+- **Y-Axis**: Burn rate multiplier
+- **Color scheme**: Red-Yellow-Green (reversed)
+
+## 💡 Best Practices
+
+1. **Start Simple**: Begin with basic metrics, add complexity as needed
+2. **Use Templating**: Variables make dashboards reusable
+3. **Set Appropriate Time Ranges**: Use `$__interval` for auto-adjustment
+4. **Add Descriptions**: Panel descriptions help team understanding
+5. **Link Dashboards**: Create drill-down paths (Overview → Provider Detail → Trace)
+6. **Test Queries**: Verify in Prometheus before adding to Grafana
+7. **Version Control**: Export dashboards as JSON and commit to git
+8. **Consistent Naming**: Use clear, descriptive panel titles
+9. **Group Related Metrics**: Use rows to organize panels
+10. **Document Thresholds**: Note SLO targets in panel descriptions
+
+## 🚀 Quick Dashboard Setup
+
+Run this in your terminal to create a basic SLO dashboard:
+
+```bash
+# This would be a Python script to auto-generate dashboards
+# For now, use the Grafana UI or import community dashboards
+```
+
+## 📖 Additional Resources
+
+- [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/)
+- [PromQL Cheat Sheet](https://promlabs.com/promql-cheat-sheet/)
+- [SLO Workshop Dashboards](https://github.com/grafana/slo-workshop)
