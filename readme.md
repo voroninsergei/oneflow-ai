@@ -1,259 +1,428 @@
-# OneFlow.AI v2.0 - Production Ready 🚀
+# OneFlow.AI v0.1.0 – Beta Preview 🚧
 
-AI Model Aggregator with Pricing, Routing, Analytics & **Secure Secret Management**
+> **Note:** This project is currently in **beta**.  While many of the building blocks for a production–grade system are in place, we are still collecting real‑world telemetry and iterating on the architecture.  Please treat it as a preview rather than a finished, battle‑hardened product.
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Security](https://img.shields.io/badge/security-enhanced-brightgreen.svg)](docs/SECURITY_GUIDE.md)
+> Enterprise-grade AI Model Aggregator с маршрутизацией, ценообразованием, аналитикой и полной observability
+
+[![Status](https://img.shields.io/badge/status-beta-yellow)](/)
+[![Test Coverage](https://img.shields.io/badge/coverage-~80%25-brightgreen)](/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](/)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-experimental-lightblue)](/)
+[![License](https://img.shields.io/badge/License-Proprietary-red)](/)
 
 ---
 
-## 🎯 Что нового в v2.0
+## 🎯 Что это?
 
-- ✅ **Безопасное хранение секретов** - поддержка AWS, Vault, GCP, Azure
-- ✅ **12-factor app** - конфигурация через переменные окружения
-- ✅ **Docker & Kubernetes** - готовые конфигурации для деплоя
-- ✅ **Pre-commit hooks** - автоматическая проверка безопасности
-- ✅ **Миграция** - автоматический переход с `.api_keys.json`
+OneFlow.AI — это **ценовой и маршрутизирующий слой** для AI‑моделей.  Он предоставляет общую точку входа к нескольким провайдерам искусственного интеллекта, оценивает стоимость запроса по числу токенов, выбирает наиболее подходящую модель и обеспечивает мониторинг и безопасность.  Проект находится на стадии **beta**, поэтому некоторые функции и показатели ещё будут меняться.
+
+- 🔀 **Автоматически выбирает** оптимальную модель (цена/скорость/качество)
+- 💰 **Прозрачное ценообразование** на основе токенов с нормализацией к кредитам
+- 🔄 **Умные fallback** при недоступности провайдеров (в стадии тестирования)
+- 📊 **Детальная аналитика** использования и затрат
+- 🔐 **Enterprise security** с JWT, API keys rotation, CORS
+- 📈 **Observability** с Prometheus, Grafana, OpenTelemetry (в разработке)
+
+---
+
+## 📍 Статус проекта и дорожная карта
+
+### ✅ Что уже работает (Beta)
+
+- ✅ Token-based ценообразование с нормализацией к кредитам
+- ✅ Интеллектуальная маршрутизация (cost/latency/quality/balanced)
+- ✅ Интеграция с OpenAI, Anthropic, Stability AI, ElevenLabs
+- ✅ Circuit breaker и retry логика
+- ✅ Базовая аутентификация (JWT, API keys)
+- ✅ Health и readiness проbes
+- ✅ Prometheus metrics endpoint
+- ✅ Docker и docker-compose конфигурация
+- ✅ Базовое покрытие тестами (~80%)
+- ✅ Structured logging
+
+### 🚧 В активной разработке
+
+- 🚧 **Observability stack**: Настройка Grafana dashboards и OpenTelemetry трассировки
+- 🚧 **Real-world SLO**: Сбор метрик доступности и latency в production-like окружении
+- 🚧 **CI/CD pipeline**: GitHub Actions для automated testing и deployment
+- 🚧 **API versioning**: Формализация OpenAPI спецификации
+- 🚧 **Rate limiting**: Тонкая настройка лимитов per-user/per-project
+- 🚧 **Kubernetes production config**: StatefulSets, PVC, HPA, ingress
+
+### 🔮 В планах (Q2-Q3 2025)
+
+- 🔮 Расширенная аналитика (cost breakdown, usage patterns)
+- 🔮 Admin dashboard для управления провайдерами
+- 🔮 Webhooks для событий (quota exceeded, provider failures)
+- 🔮 Multi-region deployments
+- 🔮 Advanced caching strategies
+- 🔮 Cost optimization recommendations
+- 🔮 A/B testing для моделей
+
+---
+
+## ✨ Ключевые возможности
+
+### 🤖 Поддерживаемые провайдеры
+
+| Провайдер | Модели | Тип | Статус |
+|-----------|--------|-----|--------|
+| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-4o, GPT-3.5-turbo, DALL-E | Text, Image | ✅ Stable |
+| **Anthropic** | Claude 3 Opus, Sonnet, Haiku | Text | ✅ Stable |
+| **Stability AI** | Stable Diffusion XL, SD3 | Image | 🚧 Testing |
+| **ElevenLabs** | Multilingual v2 | Audio | 🚧 Testing |
+
+### 💎 Production-Ready Features
+
+✅ **Observability**
+- Prometheus metrics на `/metrics`
+- Structured logging (JSON)
+- Health/readiness probes (`/health`, `/ready`)
+- OpenTelemetry distributed tracing (🚧 в настройке)
+
+✅ **Reliability**
+- Circuit breaker с exponential backoff
+- Retry логика с jitter
+- Timeouts (connect: 10s, read: 30s)
+- Идемпотентность запросов
+- Quotas per‑user/per‑provider/per‑project (🚧 в тестировании)
+
+✅ **Security**
+- JWT authentication + refresh tokens
+- API keys с автоматической ротацией (🚧 grace period testing)
+- Security headers (HSTS, CSP, X-Frame-Options)
+- Request size limits (10MB)
+- Secrets sanitization в логах
+- Rate limiting (60/min, 1000/hour) — базовая реализация
+
+✅ **Smart Routing**
+- Cost-optimized: минимальная стоимость
+- Latency-optimized: максимальная скорость
+- Quality-optimized: лучшее качество
+- Balanced: оптимальный баланс
+
+✅ **Token‑Based Billing**
+- Точный расчёт входящих и исходящих токенов для каждого запроса
+- Нормализация стоимости к кредитам (по умолчанию 1 USD = 100 кредитов)
+- Поддержка нескольких провайдеров и моделей
+- Property‑based тесты (Hypothesis)
+
+> Стоимость запроса вычисляется в модуле `pricing_v2.py`.  Этот модуль оперирует токенами (не словами) и учитывает различную стоимость входящих и исходящих токенов для каждого провайдера.  Подробнее см. [src/pricing_v2.py](src/pricing_v2.py).
 
 ---
 
 ## 🚀 Быстрый старт
 
-### 1. Клонирование и установка
+### Предварительные требования
+
+- **Python 3.11+** (tested on 3.11, 3.12)
+- Docker 20.10+ и Docker Compose 2.0+
+- PostgreSQL 14+ (или используйте docker-compose)
+- Redis 7+ (или используйте docker-compose)
+
+### Установка
 
 ```bash
-# Клонировать репозиторий
-git clone <repository-url>
-cd OneFlow.AI
+# 1. Клонирование репозитория
+git clone https://github.com/voroninsergei/oneflow-ai.git
+cd oneflow-ai
 
-# Установить зависимости
+# 2. Создание виртуального окружения
+python3.11 -m venv venv
+source venv/bin/activate  # На Windows: venv\Scripts\activate
+
+# 3. Установка зависимостей
 pip install -r requirements.txt
 
-# Установить pre-commit hooks (рекомендуется)
-pip install pre-commit
-pre-commit install
-```
+# Для разработки:
+pip install -r requirements-dev.txt
 
-### 2. Настройка секретов
-
-#### ⚡ Для разработки (рекомендуется)
-
-```bash
-# Скопировать шаблон
+# 4. Конфигурация
 cp .env.example .env
-
-# Отредактировать .env и добавить свои ключи
-nano .env
+nano .env  # Добавить API ключи провайдеров
 ```
 
-Пример `.env`:
+---
+
+## 🔑 API Keys Configuration
+
+### Recommended: Environment Variables
+
 ```bash
-OPENAI_API_KEY=sk-proj-your-key-here
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-STABILITY_API_KEY=sk-your-key-here
-ELEVENLABS_API_KEY=your-key-here
-JWT_SECRET_KEY=your-secret-key-here
+# Export API keys (рекомендуемый способ)
+export OPENAI_API_KEY='sk-...'
+export ANTHROPIC_API_KEY='sk-ant-...'
+export STABILITY_API_KEY='sk-...'
+export ELEVENLABS_API_KEY='...'
+
+# Для постоянного использования добавьте в ~/.bashrc или ~/.zshrc
+echo "export OPENAI_API_KEY='sk-...'" >> ~/.bashrc
+echo "export ANTHROPIC_API_KEY='sk-ant-...'" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-#### 🔒 Миграция со старого формата
-
-Если у вас есть `.api_keys.json`:
+### Alternative: .env File
 
 ```bash
-# Автоматическая миграция
-python migrate_to_env.py
+# .env файл (не коммитить в git!)
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+STABILITY_API_KEY=sk-...
+ELEVENLABS_API_KEY=...
 
-# Или миграция во все форматы
-python migrate_to_env.py --all
+# Дополнительные настройки
+JWT_SECRET=your-secret-key-here
+DATABASE_URL=postgresql://oneflow:password@localhost:5432/oneflow_dev
+REDIS_URL=redis://localhost:6379/0
 ```
 
-#### 🏢 Для продакшена
+### Security Best Practices
 
-См. [SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md) для настройки:
-- AWS Secrets Manager
-- HashiCorp Vault
-- Google Cloud Secret Manager
-- Azure Key Vault
-- Kubernetes Secrets
+⚠️ **Важно:**
+- **Никогда не коммитьте** API ключи в git
+- Используйте `.gitignore` для исключения `.env` файлов
+- Ротируйте ключи регулярно (рекомендуется каждые 90 дней)
+- Используйте разные ключи для dev/staging/production
+- Для production используйте secrets management (Kubernetes Secrets, AWS Secrets Manager, HashiCorp Vault)
 
-### 3. Запуск
+### Получение API ключей
+
+| Провайдер | URL для получения ключа |
+|-----------|------------------------|
+| **OpenAI** | https://platform.openai.com/api-keys |
+| **Anthropic** | https://console.anthropic.com/account/keys |
+| **Stability AI** | https://platform.stability.ai/account/keys |
+| **ElevenLabs** | https://elevenlabs.io/app/settings/api-keys |
+
+### Проверка конфигурации
 
 ```bash
-# Демо режим
-python -m src.main --demo
+# Проверить, что ключи загружены
+python -c "import os; print('OpenAI:', 'OK' if os.getenv('OPENAI_API_KEY') else 'MISSING')"
+python -c "import os; print('Anthropic:', 'OK' if os.getenv('ANTHROPIC_API_KEY') else 'MISSING')"
 
-# Web сервер
-python web_server.py
+# Или через приложение
 
-# Docker
+### Локальная разработка
+
+```bash
+# Запуск всех сервисов (PostgreSQL, Redis, Prometheus, Grafana)
+docker-compose up -d postgres redis
+
+# Применение миграций
+alembic upgrade head
+
+# Запуск development сервера
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Или через Makefile:
+make dev
+
+# Открыть API документацию
+open http://localhost:8000/docs
+```
+
+### Доступные эндпоинты
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Readiness probe
+curl http://localhost:8000/ready
+
+# Prometheus metrics
+curl http://localhost:8000/metrics
+
+# API v1 endpoints
+curl http://localhost:8000/api/v1/estimate  # POST
+curl http://localhost:8000/api/v1/request   # POST
+
+# Swagger UI
+http://localhost:8000/docs
+
+# ReDoc
+http://localhost:8000/redoc
+```
+
+### Docker развёртывание
+
+```bash
+# Сборка образа
+docker build -t oneflow-ai:0.1.0 .
+
+# Или через Makefile:
+make docker-build
+
+# Запуск полного stack
 docker-compose up -d
 
-# Kubernetes
-kubectl apply -f kubernetes-deployment.yaml
+# Проверка здоровья
+./scripts/health_check.sh
+
+# Просмотр метрик
+open http://localhost:8000/metrics
+```
+
+### Kubernetes развёртывание (Experimental)
+
+> **Warning:** Kubernetes конфигурация находится в экспериментальной стадии. Перед production использованием требуется дополнительная настройка StatefulSets, PVC, и ingress.
+
+```bash
+# Создание namespace
+kubectl create namespace oneflow-ai
+
+# Создание secrets
+kubectl create secret generic oneflow-secrets \
+  --namespace oneflow-ai \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 32) \
+  --from-literal=DATABASE_PASSWORD=$(openssl rand -hex 16) \
+  --from-literal=OPENAI_API_KEY=sk-your-key \
+  --from-literal=ANTHROPIC_API_KEY=sk-ant-your-key
+
+# Развёртывание (basic config)
+kubectl apply -f k8s/ --namespace oneflow-ai
+
+# Проверка статуса
+kubectl get pods -n oneflow-ai
+
+# Port forward для локального тестирования
+kubectl port-forward -n oneflow-ai service/oneflow-ai 8000:8000
 ```
 
 ---
 
-## 📋 Возможности
+## 📖 Использование
 
-### 🤖 Multi-modal AI Support
-- ✅ Text generation (GPT, Claude)
-- ✅ Image generation (DALL-E, Stable Diffusion)
-- ✅ Audio generation (ElevenLabs)
-- ✅ Video generation
-
-### 🎯 Smart Routing
-- ✅ Автоматический выбор провайдера
-- ✅ Fallback при недоступности
-- ✅ Балансировка нагрузки
-
-### 💰 Transparent Pricing
-- ✅ Предварительная оценка стоимости
-- ✅ Детальная аналитика расходов
-- ✅ Бюджетный контроль
-
-### 🔐 Security & Authentication
-- ✅ JWT аутентификация
-- ✅ API key management
-- ✅ Rate limiting
-- ✅ **Безопасное хранение секретов**
-
-### 📊 Analytics & Monitoring
-- ✅ Трекинг использования
-- ✅ Статистика по провайдерам
-- ✅ Анализ затрат
-- ✅ Экспорт в JSON
-
----
-
-## 🔒 Безопасность
-
-### ❌ Что больше НЕ поддерживается
-
-```json
-// .api_keys.json - УСТАРЕЛО и НЕБЕЗОПАСНО
-{
-  "openai": "sk-proj-...",
-  "anthropic": "sk-ant-..."
-}
-```
-
-### ✅ Новый безопасный подход
+### Python SDK
 
 ```python
-from src.config import get_config
+from src.pricing_v2 import PricingEngine, IntelligentRouter, RoutingStrategy
+from src.middleware.circuit_breaker import ResilientHTTPClient
 
-# Автоматическое определение источника секретов
-config = get_config()
-config.validate()
+# Инициализация
+engine = PricingEngine()
+router = IntelligentRouter(engine)
 
-# Использование
-openai_key = config.OPENAI_API_KEY
+# Получение решения о маршрутизации
+decision = router.route(
+    input_tokens=1500,
+    output_tokens=500,
+    strategy=RoutingStrategy.COST_OPTIMIZED,
+    modality="text"
+)
+
+print(f"Primary model: {decision.primary_model}")
+print(f"Estimated cost: {decision.estimated_credits} credits")
+print(f"Fallback chain: {decision.fallback_chain}")
+
+# Resilient HTTP клиент с circuit breaker
+client = ResilientHTTPClient(
+    provider_name="openai",
+    timeout=30.0,
+    max_retries=3
+)
+
+response = await client.post(
+    url="https://api.openai.com/v1/chat/completions",
+    json={"model": "gpt-4", "messages": [...]},
+    headers={"Authorization": f"Bearer {api_key}"},
+    idempotency_key="req-unique-id"
+)
 ```
 
-### 🛡️ Поддерживаемые Secret Managers
+### REST API
 
-| Метод | Безопасность | Рекомендация |
-|-------|--------------|--------------|
-| Environment Variables | ⭐⭐ | Development |
-| Docker Secrets | ⭐⭐⭐ | Small Production |
-| Kubernetes Secrets | ⭐⭐⭐ | K8s Deployments |
-| AWS Secrets Manager | ⭐⭐⭐⭐⭐ | AWS Production |
-| HashiCorp Vault | ⭐⭐⭐⭐⭐ | Enterprise |
-| GCP Secret Manager | ⭐⭐⭐⭐⭐ | GCP Production |
-| Azure Key Vault | ⭐⭐⭐⭐⭐ | Azure Production |
+```bash
+# Health check
+curl http://localhost:8000/health
 
-Подробная документация: [SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md)
+# Получение оценки стоимости
+curl -X POST http://localhost:8000/api/v1/estimate \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input_tokens": 1500,
+    "output_tokens": 500,
+    "strategy": "cost_optimized",
+    "modality": "text"
+  }'
+
+# Обработка запроса
+curl -X POST http://localhost:8000/api/v1/request \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Write a haiku about AI",
+    "strategy": "balanced"
+  }'
+```
 
 ---
 
-## 📦 Структура проекта
+## 📊 Мониторинг
 
-```
-OneFlow.AI/
-├── src/
-│   ├── main.py              # Главное приложение
-│   ├── config.py            # ⭐ Новая система конфигурации
-│   ├── router.py            # Умная маршрутизация
-│   ├── pricing.py           # Расчет стоимости
-│   ├── wallet.py            # Управление кредитами
-│   ├── analytics.py         # Аналитика
-│   ├── budget.py            # Бюджетный контроль
-│   ├── database.py          # База данных
-│   ├── auth_module.py       # Аутентификация
-│   └── providers/           # AI провайдеры
-├── docs/
-│   ├── SECURITY_GUIDE.md    # ⭐ Руководство по безопасности
-│   ├── QUICKSTART.md        # Быстрый старт
-│   ├── EXAMPLES.md          # Примеры
-│   └── API_DOCUMENTATION.md # API документация
-├── .env.example             # ⭐ Шаблон переменных окружения
-├── .pre-commit-config.yaml  # ⭐ Git hooks для безопасности
-├── docker-compose.yml       # ⭐ Docker конфигурация
-├── kubernetes-deployment.yaml # ⭐ K8s конфигурация
-├── terraform-aws-secrets.tf # ⭐ Terraform для AWS
-├── migrate_to_env.py        # ⭐ Скрипт миграции
-├── requirements.txt         # Зависимости
-└── README.md                # Этот файл
-```
-
----
-
-## 🔧 Конфигурация
-
-### Environment Variables
+### Метрики (Prometheus)
 
 ```bash
-# API Keys (обязательно)
-OPENAI_API_KEY=sk-proj-...
-ANTHROPIC_API_KEY=sk-ant-...
+# Запуск Prometheus через docker-compose
+docker-compose up -d prometheus
 
-# Database
-DATABASE_URL=postgresql://user:pass@localhost/oneflow
+# Открыть Prometheus UI
+open http://localhost:9090
 
-# Security
-JWT_SECRET_KEY=your-secret-key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+# Примеры запросов (PromQL):
+# Request rate
+rate(http_requests_total[5m])
 
-# Server
-HOST=0.0.0.0
-PORT=8000
-DEBUG=False
-LOG_LEVEL=INFO
+# Average latency
+rate(http_request_duration_seconds_sum[5m]) / 
+rate(http_request_duration_seconds_count[5m])
 
-# Features
-ENABLE_ANALYTICS=true
-ENABLE_BUDGET_ENFORCEMENT=true
-ENABLE_RATE_LIMITING=true
+# Error rate
+sum(rate(http_requests_total{status=~"5.."}[5m])) / 
+sum(rate(http_requests_total[5m]))
+
+# Circuit breaker status
+circuit_breaker_state{provider="openai"}
 ```
 
-### AWS Secrets Manager
+### Dashboards (Grafana)
 
 ```bash
-# Установка переменных
-export AWS_SECRET_NAME=oneflow-ai/api-keys
-export AWS_REGION=us-east-1
+# Запуск Grafana через docker-compose
+docker-compose up -d grafana
 
-# Или использование Terraform
-cd terraform/
-terraform init
-terraform apply
+# Открыть Grafana (admin/admin)
+open http://localhost:3000
+
+# Готовые дашборды для импорта:
+# - FastAPI: ID 11713
+# - PostgreSQL: ID 9628
+# - Redis: ID 11835
+
+# 🚧 Custom дашборды в разработке
 ```
 
-### Kubernetes
+### Distributed Tracing (Jaeger) — 🚧 In Progress
 
 ```bash
-# Создание секретов
-kubectl create secret generic oneflow-api-keys \
-  --from-literal=openai-key='sk-proj-...' \
-  --from-literal=anthropic-key='sk-ant-...' \
-  --namespace=oneflow
+# Включить в .env
+ENABLE_TRACING=true
+JAEGER_AGENT_HOST=localhost
+JAEGER_AGENT_PORT=6831
 
-# Деплой
-kubectl apply -f kubernetes-deployment.yaml
+# Запуск Jaeger (требует дополнительную настройку)
+docker run -d --name jaeger \
+  -p 5775:5775/udp \
+  -p 6831:6831/udp \
+  -p 6832:6832/udp \
+  -p 5778:5778 \
+  -p 16686:16686 \
+  jaegertracing/all-in-one:latest
+
+# Открыть Jaeger UI
+open http://localhost:16686
 ```
 
 ---
@@ -261,157 +430,439 @@ kubectl apply -f kubernetes-deployment.yaml
 ## 🧪 Тестирование
 
 ```bash
-# Все тесты
-pytest -v
+# Все unit тесты
+pytest tests/
 
-# С покрытием
-pytest --cov=src tests/
+# С coverage
+pytest --cov=src --cov-report=html tests/
 
-# Конкретный модуль
-pytest tests/test_config.py -v
+# Property-based тесты
+pytest tests/test_pricing_property.py -v
 
-# Проверка безопасности
-pre-commit run --all-files
+# Integration тесты (требуют запущенные сервисы)
+docker-compose up -d postgres redis
+pytest tests/integration/ -v
+
+# Через Makefile:
+make test              # Все тесты
+make test-coverage     # С coverage report
+make test-property     # Property-based
+```
+
+### Текущее покрытие
+
+```
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+src/pricing_v2.py               234     28    88%
+src/middleware/circuit_breaker  156     35    78%
+src/api/routes.py               189     42    78%
+src/models/                     142     18    87%
+--------------------------------------------------
+TOTAL                          1247    247    80%
 ```
 
 ---
 
-## 📊 Использование
+## 📚 Документация
 
-### Python API
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Полное руководство по развёртыванию
+- **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Чеклист перед релизом
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Сводка изменений
+- **[API Docs](http://localhost:8000/docs)** - OpenAPI/Swagger документация
+- **[ReDoc](http://localhost:8000/redoc)** - Alternative API documentation
+
+---
+
+## 🏗️ Архитектура
+
+```
+┌─────────────────────────────────────────┐
+│          Client Applications            │
+│   (Web, Mobile, CLI, Python SDK)        │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│         FastAPI Application             │
+│  ┌────────────────────────────────────┐ │
+│  │  Security Middleware               │ │
+│  │  (CORS, Headers, Size Limits)      │ │
+│  ├────────────────────────────────────┤ │
+│  │  Authentication                    │ │
+│  │  (JWT, API Keys)                   │ │
+│  ├────────────────────────────────────┤ │
+│  │  Intelligent Router                │ │
+│  │  (Cost/Latency/Quality)            │ │
+│  ├────────────────────────────────────┤ │
+│  │  Circuit Breaker & Retry           │ │
+│  ├────────────────────────────────────┤ │
+│  │  Pricing Engine                    │ │
+│  │  (Token-based billing)             │ │
+│  └────────────────────────────────────┘ │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│      AI Providers (with Fallbacks)      │
+│  ┌────────┐ ┌──────────┐ ┌───────────┐ │
+│  │ OpenAI │ │Anthropic │ │Stability  │ │
+│  └────────┘ └──────────┘ └───────────┘ │
+└─────────────────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│         Data & Monitoring               │
+│  ┌────────┐ ┌───────┐ ┌──────────────┐ │
+│  │Postgres│ │ Redis │ │  Prometheus  │ │
+│  └────────┘ └───────┘ └──────────────┘ │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 🔐 Безопасность
+
+### Встроенная защита
+
+- **Authentication**: JWT tokens + API keys
+- **Authorization**: Role-based access control (🚧 базовая реализация)
+- **Rate Limiting**: 60 req/min, 1000 req/hour (настраивается)
+- **Input Validation**: Pydantic models с strict validation
+- **SQL Injection**: SQLAlchemy ORM
+- **XSS Protection**: Security headers
+- **Secrets Management**: Rotation + grace period (🚧 в тестировании)
+
+### Security Headers
+
+```
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+X-XSS-Protection: 1; mode=block
+Strict-Transport-Security: max-age=31536000
+Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
+```
+
+### Проверка безопасности
+
+```bash
+# Security audit с bandit
+bandit -r src/ -f json -o security-report.json
+
+# Dependency audit
+pip-audit
+
+# Container scanning (если установлен Trivy)
+trivy image oneflow-ai:0.1.0
+
+# Через Makefile:
+make security-check
+make audit
+```
+
+---
+
+## 💰 Ценообразование
+
+### Поддерживаемые модели
+
+| Модель | Input ($/1M tokens) | Output ($/1M tokens) | Credits/1K tokens (≈) |
+|--------|---------------------|----------------------|-------------------|
+| GPT-4o | $2.50 | $10.00 | 0.25 - 1.00 |
+| GPT-4 Turbo | $10.00 | $30.00 | 1.00 - 3.00 |
+| GPT-4 | $30.00 | $60.00 | 3.00 - 6.00 |
+| GPT-3.5-turbo | $0.50 | $1.50 | 0.05 - 0.15 |
+| Claude 3 Opus | $15.00 | $75.00 | 1.50 - 7.50 |
+| Claude 3 Sonnet | $3.00 | $15.00 | 0.30 - 1.50 |
+| Claude 3 Haiku | $0.25 | $1.25 | 0.03 - 0.13 |
+
+*Цены актуальны на январь 2025 и могут изменяться провайдерами*
+
+### Пример расчёта
 
 ```python
-from src.main import OneFlowAI
-
-# Инициализация
-system = OneFlowAI(initial_balance=100)
-
-# Настройка бюджета
-system.setup_budget(daily=50)
-
-# Запрос к AI
-result = system.process_request('gpt', 'Hello world')
-
-if result['status'] == 'success':
-    print(f"Response: {result['response']}")
-    print(f"Cost: {result['cost']} credits")
-```
-
-### CLI
-
-```bash
-# Статус системы
-python -m src.cli status
-
-# Запрос к модели
-python -m src.cli request gpt "Write a poem"
-
-# Аналитика
-python -m src.cli analytics --detailed
-
-# Управление бюджетом
-python -m src.cli set-budget daily 100
-```
-
-### Web API
-
-```bash
-# Запуск сервера
-python web_server.py
-
-# Открыть dashboard
-open http://localhost:8000
-
-# Swagger документация
-open http://localhost:8000/docs
+# GPT-4: 1500 input + 500 output токенов
+input_cost = (1500 / 1_000_000) * 30.00 = $0.045
+output_cost = (500 / 1_000_000) * 60.00 = $0.030
+total_usd = $0.075
+credits = 0.075 * 100 = 7.5 credits
 ```
 
 ---
 
-## 🚢 Deployment
+## 📈 Performance & Observability
+
+### SLI/SLO Targets (Beta Goals)
+
+Во время бета‑фазы мы собираем реальные метрики и формируем целевые уровни обслуживания (SLO).  Таблица ниже отражает **ожидаемые** цели, а не фактические показатели production окружения.
+
+| Метрика | Цель (Beta) | Статус | Комментарий |
+|---------|-------------|--------|-------------|
+| **Доступность** | ≥ 95% | 🚧 Measuring | Повышается за счёт fallback‑ов; цель уточняется по мере накопления данных |
+| **Latency p95** | < 2s | 🚧 Measuring | Время ответа для 95% запросов; зависит от провайдера |
+| **Latency p99** | < 5s | 🚧 Measuring | Время ответа для 99% запросов |
+| **Ошибка 5xx** | < 1% | 🚧 Measuring | Доля запросов, завершившихся ошибкой сервера |
+| **Throughput** | 100-500 req/s | 🚧 Tuning | Для single‑node; масштабирование возможно через horizontal scaling |
+
+> **Note:** Эти цели будут уточнены после накопления статистики в production-like окружении. Фактическая производительность сильно зависит от инфраструктуры и нагрузки.
+
+### Наблюдаемость
+
+Проект интегрирован с Prometheus для сбора метрик. Grafana dashboards и OpenTelemetry трассировка находятся в стадии активной разработки.  В каталоге `monitoring/` можно найти примеры конфигураций.  
+
+**Рекомендуется проводить собственные нагрузочные тесты** в целевом окружении (например, с помощью k6, Locust, или Apache Bench), поскольку результаты сильно зависят от инфраструктуры.
+
+```bash
+# Пример нагрузочного теста с k6
+k6 run --vus 10 --duration 30s tests/load/scenario.js
+```
+
+---
+
+## 🛠️ Makefile команды
+
+### Development
+
+```bash
+make install          # Установка зависимостей
+make install-dev      # Установка с dev dependencies
+make dev              # Запуск dev сервера (uvicorn с reload)
+make test             # Запуск всех тестов
+make test-coverage    # Тесты с coverage
+make lint             # Проверка кода (flake8, black --check)
+make format           # Форматирование кода (black, isort)
+make type-check       # Проверка типов (mypy)
+```
 
 ### Docker
 
 ```bash
-# Build
-docker build -t oneflow-ai:latest .
+make docker-build     # Сборка образа
+make docker-up        # Запуск всех сервисов
+make docker-down      # Остановка сервисов
+make docker-logs      # Просмотр логов
+make docker-restart   # Перезапуск приложения
+make docker-shell     # Shell в контейнере
+make docker-clean     # Очистка volumes и images
+```
 
-# Run
-docker-compose up -d
+### Kubernetes (Experimental)
 
-# Logs
+```bash
+make k8s-deploy       # Развёртывание в K8s
+make k8s-delete       # Удаление ресурсов
+make k8s-status       # Статус deployment
+make k8s-logs         # Логи подов
+make k8s-port-forward # Port forward на localhost
+```
+
+### Database
+
+```bash
+make db-migrate       # Применить миграции (alembic upgrade head)
+make db-rollback      # Откатить миграцию
+make db-reset         # Сброс БД (ОПАСНО! Удаляет все данные)
+make db-shell         # PostgreSQL shell (psql)
+```
+
+### Monitoring
+
+```bash
+make prometheus       # Открыть Prometheus UI
+make grafana          # Открыть Grafana UI
+make jaeger           # Открыть Jaeger UI (требует настройку)
+```
+
+### Maintenance
+
+```bash
+make clean            # Очистка временных файлов (__pycache__, .pytest_cache)
+make clean-all        # Полная очистка (включая .venv, volumes)
+make security-check   # Проверка безопасности (bandit)
+make audit            # Аудит зависимостей (pip-audit)
+make prod-check       # Все проверки перед prod (lint+test+security)
+make prod-build       # Сборка production образа
+```
+
+---
+
+## 🌍 Окружения
+
+### Development
+
+```bash
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+DATABASE_URL=postgresql://oneflow:password@localhost:5432/oneflow_dev
+REDIS_URL=redis://localhost:6379/0
+ENABLE_METRICS=true
+ENABLE_TRACING=false
+```
+
+### Staging
+
+```bash
+ENVIRONMENT=staging
+LOG_LEVEL=INFO
+DATABASE_URL=postgresql://oneflow:password@staging-db:5432/oneflow_staging
+REDIS_URL=redis://staging-redis:6379/0
+ENABLE_TRACING=true
+ENABLE_METRICS=true
+```
+
+### Production
+
+```bash
+ENVIRONMENT=production
+LOG_LEVEL=WARNING
+DATABASE_URL=postgresql://oneflow:secure_password@prod-db:5432/oneflow_prod
+REDIS_URL=redis://prod-redis:6379/0
+ENABLE_METRICS=true
+ENABLE_TRACING=true
+DATABASE_POOL_SIZE=30
+DATABASE_MAX_OVERFLOW=10
+```
+
+---
+
+## 🔄 CI/CD Pipeline (Planned)
+
+### GitHub Actions (Coming Soon)
+
+```yaml
+name: CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+      - name: Run tests
+        run: make test-coverage
+      - name: Security check
+        run: make security-check
+  
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Docker image
+        run: make docker-build
+      - name: Push to registry
+        run: docker push oneflow-ai:${{ github.sha }}
+  
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to K8s
+        run: kubectl set image deployment/oneflow-ai oneflow-ai=oneflow-ai:${{ github.sha }}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Проблема: API не отвечает
+
+```bash
+# Проверить логи
 docker-compose logs -f oneflow-ai
 
-# Stop
-docker-compose down
+# Проверить health
+curl http://localhost:8000/health
+
+# Проверить readiness
+curl http://localhost:8000/ready
+
+# Перезапустить
+docker-compose restart oneflow-ai
 ```
 
-### Kubernetes
+### Проблема: High latency
 
 ```bash
-# Создать namespace
-kubectl create namespace oneflow
+# Проверить метрики
+curl http://localhost:8000/metrics | grep http_request_duration
 
-# Создать секреты
-kubectl create secret generic oneflow-api-keys \
-  --from-literal=openai-key='...' \
-  --namespace=oneflow
+# Проверить circuit breaker
+curl http://localhost:8000/metrics | grep circuit_breaker_state
 
-# Deploy
-kubectl apply -f kubernetes-deployment.yaml
+# Проверить статус сервисов
+docker-compose ps
 
-# Проверка
-kubectl get pods -n oneflow
-kubectl logs -f deployment/oneflow-ai -n oneflow
+# Увеличить timeout в .env
+HTTP_TIMEOUT=60
 ```
 
-### AWS ECS/EC2
+### Проблема: Database connection errors
 
 ```bash
-# Terraform
-cd terraform/
-terraform init
-terraform plan
-terraform apply
+# Проверить PostgreSQL
+docker-compose exec postgres psql -U oneflow -d oneflow_dev
 
-# Или CloudFormation
-aws cloudformation create-stack \
-  --stack-name oneflow-ai \
-  --template-body file://cloudformation.yaml
+# Проверить connection pool
+curl http://localhost:8000/metrics | grep db_pool
+
+# Проверить миграции
+alembic current
+alembic history
+
+# Увеличить pool size в .env
+DATABASE_POOL_SIZE=30
+DATABASE_MAX_OVERFLOW=10
+```
+
+### Проблема: Circuit breaker открывается слишком часто
+
+```bash
+# Проверить метрики ошибок провайдера
+curl http://localhost:8000/metrics | grep provider_errors
+
+# Увеличить failure threshold
+CIRCUIT_BREAKER_FAILURE_THRESHOLD=10
+
+# Увеличить timeout window
+CIRCUIT_BREAKER_TIMEOUT=120
 ```
 
 ---
 
-## 📖 Документация
+## 📞 Поддержка
 
-- [SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md) - **⭐ Безопасность и секреты**
-- [QUICKSTART.md](docs/QUICKSTART.md) - Быстрый старт
-- [EXAMPLES.md](docs/EXAMPLES.md) - Примеры использования
-- [API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) - API документация
-- [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) - Руководство разработчика
+### Документация
 
----
+- 📖 [Deployment Guide](DEPLOYMENT.md)
+- ✅ [Production Checklist](PRODUCTION_CHECKLIST.md)
+- 📝 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+- 🔧 [API Reference](http://localhost:8000/docs)
 
-## 🔄 Миграция с v1.x
+### Контакты
 
-Если вы используете старую версию с `.api_keys.json`:
+- **Email**: voroninsergeiai@gmail.com
+- **GitHub**: [@voroninsergei](https://github.com/voroninsergei)
+- **Issues**: [GitHub Issues](https://github.com/voroninsergei/oneflow-ai/issues)
 
-```bash
-# Автоматическая миграция
-python migrate_to_env.py
+### Коммьюнити
 
-# Проверка
-python -m src.main --demo
-
-# Удаление старого файла
-rm .api_keys.json
-```
-
-**Важно:** См. [SECURITY_GUIDE.md](docs/SECURITY_GUIDE.md) для деталей миграции.
+- 💬 Задать вопрос: [Discussions](https://github.com/voroninsergei/oneflow-ai/discussions)
+- 🐛 Сообщить о баге: [Issues](https://github.com/voroninsergei/oneflow-ai/issues)
+- 🎉 Предложить feature: [Feature Requests](https://github.com/voroninsergei/oneflow-ai/discussions/categories/ideas)
 
 ---
 
 ## 🤝 Contributing
+
+Мы приветствуем вклад в проект! Пожалуйста:
 
 1. Fork репозиторий
 2. Создайте feature branch (`git checkout -b feature/amazing-feature`)
@@ -419,53 +870,83 @@ rm .api_keys.json
 4. Push в branch (`git push origin feature/amazing-feature`)
 5. Откройте Pull Request
 
-### Стандарты разработки
+### Code Style
 
-- ✅ Все секреты только через переменные окружения
-- ✅ Pre-commit hooks должны проходить
-- ✅ Покрытие тестами > 80%
-- ✅ Следование PEP 8
-- ✅ Документация обязательна
+```bash
+# Перед коммитом
+make format       # Black + isort
+make lint         # Flake8
+make type-check   # Mypy
+make test         # Pytest
 
----
+# Или все сразу:
+make prod-check
+```
 
-## 📝 License
+### Требования к PR
 
-This is a proprietary project. See [LICENSE](LICENSE) for details.
-
-Copyright © 2025 Sergey Voronin. All rights reserved.
-
----
-
-## 👤 Author
-
-**Sergey Voronin**
-- Email: voroninsergeiai@gmail.com
-- Project: OneFlow.AI v2.0
+- ✅ Все тесты проходят
+- ✅ Coverage не снижается
+- ✅ Код отформатирован (black, isort)
+- ✅ Нет warnings от flake8 и mypy
+- ✅ Добавлены тесты для новой функциональности
+- ✅ Обновлена документация
 
 ---
 
-## 🙏 Acknowledgments
+## 📜 License
 
-Built with:
-- [FastAPI](https://fastapi.tiangolo.com/) - Web framework
-- [SQLAlchemy](https://www.sqlalchemy.org/) - ORM
-- [PyJWT](https://pyjwt.readthedocs.io/) - Authentication
-- [OpenAI](https://openai.com/), [Anthropic](https://anthropic.com/), [Stability AI](https://stability.ai/), [ElevenLabs](https://elevenlabs.io/) - AI providers
+Proprietary License - Copyright (c) 2025 Sergey Voronin. All rights reserved.
+
+See [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📊 Roadmap
+## 🙏 Благодарности
 
-- [ ] GraphQL API
-- [ ] WebSocket support
-- [ ] Multi-tenant support
-- [ ] Advanced analytics dashboard
-- [ ] Mobile app
-- [ ] Plugin system
+Построено с использованием:
+
+- **FastAPI** - Modern web framework
+- **SQLAlchemy** - SQL toolkit and ORM
+- **Pydantic** - Data validation
+- **Prometheus** - Monitoring and alerting
+- **OpenTelemetry** - Observability framework
+- **Kubernetes** - Container orchestration
+- **Docker** - Containerization
+- **PostgreSQL** - Relational database
+- **Redis** - In-memory data store
 
 ---
 
-**Made with ❤️ by Sergey Voronin | OneFlow.AI v2.0 - Production Ready 🚀**
+## 📊 Статистика проекта
 
-> ⚠️ **Security First**: Эта версия полностью переработана с фокусом на безопасность. Больше никаких секретов в JSON файлах!
+```
+┌─────────────────────────────────────────┐
+│  Project Status:        Beta Preview    │
+│  Version:               0.1.0            │
+├─────────────────────────────────────────┤
+│  👀 Observability:       🚧 In Progress  │
+│  🔧 Reliability:         ✅ Core Ready    │
+│  🔒 Security:            ✅ First‑class   │
+│  🚀 Performance:         🚧 Tuning       │
+│  🏗️ Infrastructure:      ✅ Docker Ready  │
+│  ☸️  Kubernetes:         🚧 Experimental │
+├─────────────────────────────────────────┤
+│  📝 Files:               50+             │
+│  🧪 Test Coverage:       ~80%            │
+│  📚 Documentation:       Extensive       │
+│  🐳 Docker:              ✅ Supported     │
+│  🔄 CI/CD:               🚧 Planned       │
+└─────────────────────────────────────────┘
+```
+
+### Legend
+- ✅ **Ready**: Функциональность реализована и протестирована
+- 🚧 **In Progress**: Активная разработка или настройка
+- 🔮 **Planned**: Запланировано на будущее
+
+---
+
+**Made with ❤️ by Sergey Voronin**
+
+*OneFlow.AI - Simplifying AI Model Integration since 2025*
