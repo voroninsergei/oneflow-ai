@@ -1,194 +1,163 @@
 """
-Command Line Interface for OneFlow.AI.
-Интерфейс командной строки для OneFlow.AI.
+OneFlow.AI CLI - Fixed Version
+CLI OneFlow.AI - Исправленная версия
 
-This module provides a comprehensive CLI for interacting with OneFlow.AI,
-including commands for requests, analytics, budget management, and configuration.
-
-Этот модуль предоставляет полноценный CLI для взаимодействия с OneFlow.AI,
-включая команды для запросов, аналитики, управления бюджетом и конфигурации.
+Working command-line interface with all documented commands.
+Рабочий интерфейс командной строки со всеми задокументированными командами.
 """
 
 import argparse
 import sys
+import json
 from typing import Optional
-from main import OneFlowAI
-from config import Config, get_config
-from budget import BudgetPeriod
+
+# Try to import main components
+try:
+    from main import OneFlowAI
+    HAS_MAIN = True
+except ImportError:
+    HAS_MAIN = False
+    print("Warning: Could not import OneFlowAI. Some features may be limited.")
+
+try:
+    from budget import BudgetPeriod
+    HAS_BUDGET = True
+except ImportError:
+    HAS_BUDGET = False
 
 
-class OneFlowCLI:
-    """
-    Command Line Interface for OneFlow.AI.
-    Интерфейс командной строки для OneFlow.AI.
-    """
+def handle_request(args):
+    """Handle request command."""
+    if not HAS_MAIN:
+        print("Error: OneFlowAI module not available")
+        return 1
     
-    def __init__(self, config_file: Optional[str] = None):
-        """
-        Initialize CLI with optional configuration file.
-        Инициализировать CLI с необязательным файлом конфигурации.
-        
-        Args:
-            config_file: Path to configuration file.
-        """
-        self.config = Config(config_file) if config_file else Config()
-        self.system = OneFlowAI(initial_balance=self.config.wallet_balance)
-        self._apply_config()
+    system = OneFlowAI(initial_balance=100)
+    result = system.process_request(args.model, args.prompt)
     
-    def _apply_config(self):
-        """Apply configuration to the system."""
-        # Apply budget limits
-        for period_name, limit in self.config.budget_limits.items():
-            if limit is not None:
-                period = BudgetPeriod[period_name.upper()]
-                self.system.budget.set_limit(period, limit)
-        
-        # Apply provider budgets
-        for provider, limit in self.config.provider_budgets.items():
-            if limit is not None:
-                self.system.budget.set_provider_limit(provider, limit)
-    
-    def request(self, model: str, prompt: str, verbose: bool = False) -> int:
-        """
-        Process an AI request.
-        Обработать запрос к AI.
-        
-        Args:
-            model: Model type.
-            prompt: User prompt.
-            verbose: Show detailed output.
-        
-        Returns:
-            int: Exit code (0 for success, 1 for error).
-        """
-        result = self.system.process_request(model, prompt)
-        
-        if result['status'] == 'success':
-            if verbose:
-                print(f"✓ Request successful")
-                print(f"  Model: {model}")
-                print(f"  Cost: {result['cost']:.2f} credits")
-                print(f"  Balance: {result['balance']:.2f} credits")
-                print(f"  Response: {result['response']}")
-            else:
-                print(result['response'])
-            return 0
+    if result['status'] == 'success':
+        if args.verbose:
+            print(f"✓ Success")
+            print(f"  Provider: {result.get('provider', 'unknown')}")
+            print(f"  Cost: {result['cost']:.2f} credits")
+            print(f"  Balance: {result['balance']:.2f} credits")
+            print(f"  Response: {result['response']}")
         else:
-            print(f"✗ Error: {result['message']}", file=sys.stderr)
-            if verbose:
-                print(f"  Balance: {result['balance']:.2f} credits", file=sys.stderr)
-            return 1
+            print(result['response'])
+        return 0
+    else:
+        print(f"✗ Error: {result['message']}", file=sys.stderr)
+        return 1
+
+
+def handle_status(args):
+    """Handle status command."""
+    if not HAS_MAIN:
+        print("Error: OneFlowAI module not available")
+        return 1
     
-    def status(self):
-        """
-        Display system status.
-        Показать статус системы.
-        """
-        print(self.system.get_status())
+    system = OneFlowAI(initial_balance=100)
+    print(system.get_status())
+    return 0
+
+
+def handle_analytics(args):
+    """Handle analytics command."""
+    if not HAS_MAIN:
+        print("Error: OneFlowAI module not available")
+        return 1
     
-    def analytics(self, detailed: bool = False):
-        """
-        Display analytics report.
-        Показать отчёт аналитики.
-        
-        Args:
-            detailed: Show detailed report.
-        """
-        if detailed:
-            print(self.system.analytics.get_summary_report())
+    system = OneFlowAI(initial_balance=100)
+    
+    if args.export:
+        try:
+            from analytics import Analytics
+            analytics = Analytics()
+            data = analytics.export_to_dict()
             
-            recent = self.system.analytics.get_recent_requests(limit=5)
-            if recent:
-                print("\nRecent Requests | Последние запросы:")
-                print("-" * 60)
-                for i, req in enumerate(recent, 1):
-                    print(f"{i}. [{req['provider']}] {req['prompt'][:50]}...")
-                    print(f"   Cost: {req['cost']:.2f} | Status: {req['status']}")
-        else:
-            print(self.system.analytics.get_summary_report())
-    
-    def budget(self):
-        """
-        Display budget information.
-        Показать информацию о бюджете.
-        """
-        print(self.system.budget.get_budget_summary())
-    
-    def config_info(self):
-        """
-        Display configuration information.
-        Показать информацию о конфигурации.
-        """
-        print(self.config.get_config_summary())
-    
-    def add_credits(self, amount: float):
-        """
-        Add credits to wallet.
-        Добавить кредиты в кошелёк.
-        
-        Args:
-            amount: Amount to add.
-        """
-        try:
-            self.system.wallet.add_credits(amount)
-            print(f"✓ Added {amount:.2f} credits")
-            print(f"  New balance: {self.system.wallet.get_balance():.2f} credits")
-        except Exception as e:
-            print(f"✗ Error: {e}", file=sys.stderr)
-            return 1
-        return 0
-    
-    def set_budget(self, period: str, amount: float):
-        """
-        Set budget limit for a period.
-        Установить лимит бюджета на период.
-        
-        Args:
-            period: Period name (daily, weekly, monthly, total).
-            amount: Limit amount.
-        """
-        try:
-            period_enum = BudgetPeriod[period.upper()]
-            self.system.budget.set_limit(period_enum, amount)
-            print(f"✓ Set {period} budget limit to {amount:.2f} credits")
-        except KeyError:
-            print(f"✗ Invalid period: {period}", file=sys.stderr)
-            print(f"   Valid periods: daily, weekly, monthly, total", file=sys.stderr)
-            return 1
-        except Exception as e:
-            print(f"✗ Error: {e}", file=sys.stderr)
-            return 1
-        return 0
-    
-    def export_analytics(self, filepath: str):
-        """
-        Export analytics data to JSON file.
-        Экспортировать данные аналитики в JSON файл.
-        
-        Args:
-            filepath: Output file path.
-        """
-        import json
-        
-        try:
-            data = self.system.analytics.export_to_dict()
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(args.export, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            print(f"✓ Analytics exported to {filepath}")
+            
+            print(f"✓ Analytics exported to {args.export}")
+            return 0
         except Exception as e:
-            print(f"✗ Error exporting analytics: {e}", file=sys.stderr)
+            print(f"✗ Export failed: {e}", file=sys.stderr)
             return 1
+    else:
+        summary = system.get_analytics_summary()
+        if summary:
+            print(summary)
+        else:
+            print("Analytics not available")
         return 0
 
 
-def create_parser() -> argparse.ArgumentParser:
-    """
-    Create argument parser for CLI.
-    Создать парсер аргументов для CLI.
+def handle_budget(args):
+    """Handle budget command."""
+    if not HAS_MAIN:
+        print("Error: OneFlowAI module not available")
+        return 1
     
-    Returns:
-        ArgumentParser: Configured parser.
-    """
+    system = OneFlowAI(initial_balance=100)
+    summary = system.get_budget_summary()
+    
+    if summary:
+        print(summary)
+    else:
+        print("Budget module not available")
+    
+    return 0
+
+
+def handle_config(args):
+    """Handle config command."""
+    try:
+        from config import Config
+        config = Config()
+        print(config.get_config_summary())
+        return 0
+    except ImportError:
+        print("Config module not available")
+        return 1
+
+
+def handle_add_credits(args):
+    """Handle add-credits command."""
+    if not HAS_MAIN:
+        print("Error: OneFlowAI module not available")
+        return 1
+    
+    system = OneFlowAI(initial_balance=100)
+    
+    try:
+        system.add_credits(args.amount)
+        print(f"✓ Added {args.amount:.2f} credits")
+        print(f"  New balance: {system.wallet.get_balance():.2f} credits")
+        return 0
+    except Exception as e:
+        print(f"✗ Error: {e}", file=sys.stderr)
+        return 1
+
+
+def handle_set_budget(args):
+    """Handle set-budget command."""
+    if not HAS_MAIN or not HAS_BUDGET:
+        print("Error: Required modules not available")
+        return 1
+    
+    system = OneFlowAI(initial_balance=100)
+    
+    try:
+        system.setup_budget(**{args.period: args.amount})
+        print(f"✓ Budget limit set: {args.period} = {args.amount:.2f} credits")
+        return 0
+    except Exception as e:
+        print(f"✗ Error: {e}", file=sys.stderr)
+        return 1
+
+
+def main():
+    """Main CLI entry point."""
     parser = argparse.ArgumentParser(
         prog='oneflow',
         description='OneFlow.AI - AI Model Aggregator CLI',
@@ -197,111 +166,62 @@ def create_parser() -> argparse.ArgumentParser:
 Examples:
   oneflow request gpt "Hello world"
   oneflow status
-  oneflow analytics --detailed
-  oneflow budget
+  oneflow analytics --export data.json
   oneflow add-credits 50
   oneflow set-budget daily 100
 
-For more information, visit: https://github.com/yourrepo/OneFlow.AI
+For more information: https://github.com/voroninsergei/oneflow-ai
         """
     )
     
-    parser.add_argument(
-        '--config',
-        type=str,
-        help='Path to configuration file'
-    )
-    
-    parser.add_argument(
-        '--verbose',
-        '-v',
-        action='store_true',
-        help='Verbose output'
-    )
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
-    # Request command
+    # request command
     request_parser = subparsers.add_parser('request', help='Make an AI request')
-    request_parser.add_argument('model', type=str, help='Model type (gpt, image, audio, video)')
-    request_parser.add_argument('prompt', type=str, help='Request prompt')
+    request_parser.add_argument('model', help='Model type (gpt, image, audio, video)')
+    request_parser.add_argument('prompt', help='Request prompt')
+    request_parser.set_defaults(func=handle_request)
     
-    # Status command
-    subparsers.add_parser('status', help='Show system status')
+    # status command
+    status_parser = subparsers.add_parser('status', help='Show system status')
+    status_parser.set_defaults(func=handle_status)
     
-    # Analytics command
-    analytics_parser = subparsers.add_parser('analytics', help='Show analytics report')
-    analytics_parser.add_argument('--detailed', '-d', action='store_true', help='Show detailed report')
-    analytics_parser.add_argument('--export', type=str, help='Export to JSON file')
+    # analytics command
+    analytics_parser = subparsers.add_parser('analytics', help='Show analytics')
+    analytics_parser.add_argument('--export', help='Export to JSON file')
+    analytics_parser.set_defaults(func=handle_analytics)
     
-    # Budget command
-    subparsers.add_parser('budget', help='Show budget information')
+    # budget command
+    budget_parser = subparsers.add_parser('budget', help='Show budget information')
+    budget_parser.set_defaults(func=handle_budget)
     
-    # Config command
-    subparsers.add_parser('config', help='Show configuration')
+    # config command
+    config_parser = subparsers.add_parser('config', help='Show configuration')
+    config_parser.set_defaults(func=handle_config)
     
-    # Add credits command
+    # add-credits command
     credits_parser = subparsers.add_parser('add-credits', help='Add credits to wallet')
     credits_parser.add_argument('amount', type=float, help='Amount to add')
+    credits_parser.set_defaults(func=handle_add_credits)
     
-    # Set budget command
-    budget_parser = subparsers.add_parser('set-budget', help='Set budget limit')
-    budget_parser.add_argument('period', type=str, choices=['daily', 'weekly', 'monthly', 'total'],
-                              help='Budget period')
-    budget_parser.add_argument('amount', type=float, help='Limit amount')
+    # set-budget command
+    budget_set_parser = subparsers.add_parser('set-budget', help='Set budget limit')
+    budget_set_parser.add_argument('period', choices=['daily', 'weekly', 'monthly', 'total'])
+    budget_set_parser.add_argument('amount', type=float, help='Limit amount')
+    budget_set_parser.set_defaults(func=handle_set_budget)
     
-    return parser
-
-
-def main():
-    """
-    Main entry point for CLI.
-    Главная точка входа для CLI.
-    """
-    parser = create_parser()
+    # Parse arguments
     args = parser.parse_args()
     
     if not args.command:
         parser.print_help()
         return 0
     
-    # Initialize CLI
-    cli = OneFlowCLI(config_file=args.config)
-    
     # Execute command
     try:
-        if args.command == 'request':
-            return cli.request(args.model, args.prompt, verbose=args.verbose)
-        
-        elif args.command == 'status':
-            cli.status()
-            return 0
-        
-        elif args.command == 'analytics':
-            if hasattr(args, 'export') and args.export:
-                return cli.export_analytics(args.export)
-            else:
-                cli.analytics(detailed=args.detailed)
-                return 0
-        
-        elif args.command == 'budget':
-            cli.budget()
-            return 0
-        
-        elif args.command == 'config':
-            cli.config_info()
-            return 0
-        
-        elif args.command == 'add-credits':
-            return cli.add_credits(args.amount)
-        
-        elif args.command == 'set-budget':
-            return cli.set_budget(args.period, args.amount)
-        
-        else:
-            parser.print_help()
-            return 1
-    
+        return args.func(args)
     except KeyboardInterrupt:
         print("\n\nInterrupted by user", file=sys.stderr)
         return 130
