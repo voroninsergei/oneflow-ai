@@ -1,0 +1,22 @@
+{
+  "rates": {
+    "gpt": 1.0,
+    "image": 10.0,
+    "audio": 5.0,
+    "video": 20.0
+  },
+  "wallet_balance": 100.0,
+  "budget_limits": {
+    "daily": 50.0,
+    "weekly": 300.0,
+    "monthly": 1000.0,
+    "total": null
+  },
+  "provider_budgets": {
+    "gpt": 100.0,
+    "image": 200.0,
+    "audio": 150.0,
+    "video": 300.0
+  },
+  "region": "US"
+}
