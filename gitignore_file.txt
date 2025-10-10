@@ -1,0 +1,321 @@
+# OneFlow.AI .gitignore
+
+# ============================================
+# CRITICAL: API Keys and Secrets
+# ============================================
+.api_keys.json
+*.key
+*.pem
+.env
+.env.local
+.env.*.local
+secrets/
+credentials/
+
+# ============================================
+# Python
+# ============================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test-report.html
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ============================================
+# IDEs
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ============================================
+# OS
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+
+# ============================================
+# Database
+# ============================================
+*.db
+*.sqlite
+*.sqlite3
+data/oneflow.db
+data/*.db
+data/*.sqlite
+data/*.db-journal
+
+# Database backups
+*.db.bak
+*.sqlite.bak
+data/*.bak
+
+# ============================================
+# Logs
+# ============================================
+logs/
+*.log
+oneflow.log
+*.log.*
+
+# ============================================
+# Docker
+# ============================================
+.dockerignore
+docker-compose.override.yml
+
+# ============================================
+# Monitoring
+# ============================================
+monitoring/prometheus/data/
+monitoring/grafana/data/
+
+# ============================================
+# SSL/TLS
+# ============================================
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+ssl/
+*.cert
+
+# ============================================
+# Backups
+# ============================================
+*.bak
+*.backup
+backups/
+
+# ============================================
+# Temporary files
+# ============================================
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ============================================
+# Node (if using frontend)
+# ============================================
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# ============================================
+# Project specific
+# ============================================
+# Configuration overrides
+config.local.json
+config.*.json
+!config.example.json
+
+# User data
+user_data/
+uploads/
+
+# Cache
+.cache/
+cache/
+
+# Analytics exports
+analytics_*.json
+metrics_*.json
+
+# Test outputs
+test_output/
+test_results/
+
+# ============================================
+# CI/CD
+# ============================================
+.github/workflows/*.local.yml
+
+# ============================================
+# Documentation builds
+# ============================================
+docs/_build/
+docs/.doctrees/
+
+# ============================================
+# Kubernetes
+# ============================================
+k8s/secrets/
+k8s/*.secret.yaml
+
+# ============================================
+# Monitoring & Metrics
+# ============================================
+prometheus_data/
+grafana_data/
+
+# ============================================
+# Misc
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pdm.toml
+.pdm-python
