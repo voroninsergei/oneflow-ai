@@ -1,0 +1,8 @@
+# Default owners for everything in the repo
+* @voroninsergei
+
+# Specific areas
+/src/providers/ @voroninsergei
+/src/auth_module.py @voroninsergei
+/docs/ @voroninsergei
+/.github/ @voroninsergei
