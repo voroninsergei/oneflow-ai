@@ -1,0 +1,265 @@
+groups:
+  # ============================================================================
+  # APPLICATION ALERTS
+  # ============================================================================
+  - name: oneflow_application
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(oneflow_requests_total{status="error"}[5m])) 
+            / 
+            sum(rate(oneflow_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Very high error rate
+      - alert: VeryHighErrorRate
+        expr: |
+          (
+            sum(rate(oneflow_requests_total{status="error"}[5m])) 
+            / 
+            sum(rate(oneflow_requests_total[5m]))
+          ) > 0.15
+        for: 2m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 15%)"
+
+      # High latency
+      - alert: HighRequestLatency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(oneflow_request_duration_seconds_bucket[5m])) by (le, provider)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High request latency for {{ $labels.provider }}"
+          description: "95th percentile latency is {{ $value }}s (threshold: 5s)"
+
+      # No requests (service might be down)
+      - alert: NoRequestsReceived
+        expr: |
+          rate(oneflow_requests_total[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "No requests received"
+          description: "Application hasn't received any requests in the last 5 minutes"
+
+  # ============================================================================
+  # PROVIDER HEALTH ALERTS
+  # ============================================================================
+  - name: provider_health
+    interval: 30s
+    rules:
+      # Provider unavailable
+      - alert: ProviderUnhealthy
+        expr: oneflow_provider_health_status == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: provider
+        annotations:
+          summary: "Provider {{ $labels.provider }} is unhealthy"
+          description: "Provider {{ $labels.provider }} has been marked as unhealthy"
+
+      # Circuit breaker open
+      - alert: CircuitBreakerOpen
+        expr: oneflow_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: warning
+          component: circuit_breaker
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.provider }}"
+          description: "Circuit breaker is open for {{ $labels.provider }}, requests are failing"
+
+      # High provider error rate
+      - alert: HighProviderErrorRate
+        expr: oneflow_provider_error_rate > 0.10
+        for: 5m
+        labels:
+          severity: warning
+          component: provider
+        annotations:
+          summary: "High error rate for {{ $labels.provider }}"
+          description: "Provider {{ $labels.provider }} error rate is {{ $value | humanizePercentage }}"
+
+  # ============================================================================
+  # RATE LIMITING & QUOTA ALERTS
+  # ============================================================================
+  - name: rate_limiting
+    interval: 30s
+    rules:
+      # High rate limit hits
+      - alert: HighRateLimitHits
+        expr: rate(oneflow_rate_limit_exceeded_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: rate_limiter
+        annotations:
+          summary: "High rate limit violations"
+          description: "Rate limit is being exceeded {{ $value }} times per second"
+
+      # Quota exceeded frequently
+      - alert: FrequentQuotaExceeded
+        expr: rate(oneflow_quota_exceeded_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: quota
+        annotations:
+          summary: "Frequent quota violations"
+          description: "Quota is being exceeded {{ $value }} times per second"
+
+  # ============================================================================
+  # DATABASE ALERTS
+  # ============================================================================
+  - name: database
+    interval: 30s
+    rules:
+      # Slow queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(oneflow_db_query_duration_seconds_bucket[5m])) by (le, query_type)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query duration is {{ $value }}s for {{ $labels.query_type }}"
+
+      # Connection pool exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          oneflow_db_connection_pool_active / oneflow_db_connection_pool_size > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of connection pool is in use"
+
+  # ============================================================================
+  # SYSTEM RESOURCE ALERTS
+  # ============================================================================
+  - name: system_resources
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value | humanize }}%"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value | humanize }}%"
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: |
+          (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} is {{ $value | humanize }}% full"
+
+  # ============================================================================
+  # COST & BUDGET ALERTS
+  # ============================================================================
+  - name: cost_budget
+    interval: 60s
+    rules:
+      # Budget threshold exceeded
+      - alert: BudgetThresholdExceeded
+        expr: oneflow_budget_utilization_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: budget
+        annotations:
+          summary: "Budget threshold exceeded for user {{ $labels.user_id }}"
+          description: "User {{ $labels.user_id }} has used {{ $value }}% of {{ $labels.period }} budget"
+
+      # High cost per request
+      - alert: HighCostPerRequest
+        expr: |
+          avg(oneflow_cost_per_request_credits) by (provider) > 1.0
+        for: 10m
+        labels:
+          severity: info
+          component: cost
+        annotations:
+          summary: "High average cost for {{ $labels.provider }}"
+          description: "Average cost per request is {{ $value }} credits"
+
+  # ============================================================================
+  # ROUTING ALERTS
+  # ============================================================================
+  - name: routing
+    interval: 30s
+    rules:
+      # Frequent fallback activations
+      - alert: FrequentFallbackActivations
+        expr: rate(oneflow_fallback_activations_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: routing
+        annotations:
+          summary: "Frequent fallback activations"
+          description: "Fallback is being activated {{ $value }} times per second"
+
+      # Slow routing decisions
+      - alert: SlowRoutingDecisions
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(oneflow_routing_decision_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: routing
+        annotations:
+          summary: "Slow routing decisions"
+          description: "95th percentile routing decision time is {{ $value }}s"
