@@ -89,4 +89,64 @@ def main():
     else:
         print("Insufficient credits in wallet")
 
-    main()
+  #####    # main()
+
+
+def run_workflow():
+    """
+    Run the main OneFlow.AI workflow demonstration.
+
+    Русская версия:
+    Запуск основного демонстрационного рабочего процесса OneFlow.AI.
+    """
+    # Initialize wallet, pricing calculator, and router
+    wallet = Wallet(initial_balance=100)
+    pricing = PricingCalculator()
+    router = Router()
+
+    # Register rates for providers (cost per unit)
+    pricing.register_rate('gpt', 1)  # cost per word
+    pricing.register_rate('image', 10)  # cost per image generation
+    pricing.register_rate('audio', 5)  # cost per audio generation
+    pricing.register_rate('video', 20)  # cost per video generation
+
+    # Initialize provider instances
+    gpt_provider = GPTProvider(name='gpt')
+    image_provider = ImageProvider(name='image')
+    audio_provider = AudioProvider(name='audio')
+    video_provider = VideoProvider(name='video')
+
+    # Register providers in the router
+    router.register_provider(gpt_provider)
+    router.register_provider(image_provider)
+    router.register_provider(audio_provider)
+    router.register_provider(video_provider)
+
+    # Prompt user for input
+    model = input("Enter model type (gpt, image, audio, or video): ")
+    prompt = input("Enter your prompt: ")
+
+    # Determine cost units based on model type
+    if model.lower() == 'gpt':
+        cost_units = len(prompt.split())
+    else:
+        cost_units = 1
+
+    # Estimate cost
+    cost = pricing.estimate_cost(model.lower(), cost_units)
+    print(f"Estimated cost for {model} request: {cost} credits")
+
+    # Check if the wallet can afford the request
+    if wallet.can_afford(cost):
+        wallet.deduct(cost)
+        # Create request dictionary for router
+        request = {'type': model.lower(), 'prompt': prompt}
+        response = router.route_request(request)
+        print(f"Response from {model}: {response}")
+        print(f"Remaining balance: {wallet.get_balance()} credits")
+    else:
+        print("Insufficient credits in wallet")
+
+
+if __name__ == '__main__':
+    run_workflow()
