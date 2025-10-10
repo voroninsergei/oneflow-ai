@@ -50,6 +50,7 @@ aws_create_secret.sh
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 *.so
 .Python
 build/
