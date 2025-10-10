@@ -1,4 +1,23 @@
 # Changelog
+## [0.1.0] - 2025-10-10
+
+### 🎉 Initial Public Beta
+
+This release marks the first public beta of OneFlow.AI.  The project has been refactored to reflect its early‑stage nature and to set realistic expectations for users.
+
+#### Added
+- A beta status badge and updated documentation to highlight that the system is in preview.  Removed claims of “production ready”, “99.9 % uptime” and 100 % readiness from the README.
+- A clearly documented secret management approach that prioritises environment variables and external secret managers.  The legacy `.api_keys.json` format is now explicitly marked as **development‑only** and a migration script is provided.
+- A basic quality assurance workflow using GitHub Actions (`ci.yml`) that runs ruff, black, mypy and pytest with coverage.  Coverage results are exposed via badges in the README.
+- Packaging via PEP 621 using `pyproject.toml` with a unified version number (`0.1.0`) and updated `setup.py`/`pyproject.poetry.toml` to match.  This lays the groundwork for automated releases to PyPI.
+- An initial entry in the changelog to track future changes.  Follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/) going forward.
+
+#### Changed
+- The pricing documentation now explicitly references the token‑based billing engine (`pricing_v2.py`) instead of implying per‑word pricing.  Pricing tables denote credits per 1 K tokens as approximate values.
+- Performance and availability metrics in the README have been rephrased as **targets** rather than accomplished SLOs.  Benchmarks are removed from the static documentation because they depend on the deployment environment.
+
+#### Removed
+- The placeholder `.gitignore_file.txt` has been removed in favour of a comprehensive `.gitignore` that includes database files, logs and other artifacts.
 
 All notable changes to OneFlow.AI will be documented in this file.
 

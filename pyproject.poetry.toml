@@ -3,7 +3,7 @@
 
 [tool.poetry]
 name = "oneflow-ai"
-version = "2.0.0"
+version = "0.1.0"
 description = "AI Model Aggregator with pricing, routing, analytics & authentication"
 authors = ["Sergey Voronin <voroninsergeiai@gmail.com>"]
 license = "Proprietary"
