@@ -1,0 +1,65 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: oneflow-ai-hpa
+  namespace: oneflow-ai
+  labels:
+    app: oneflow-ai
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: oneflow-ai
+  
+  minReplicas: 3
+  maxReplicas: 10
+  
+  metrics:
+  # CPU utilization
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  
+  # Memory utilization
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  
+  # Custom metrics (требует Prometheus Adapter)
+  # - type: Pods
+  #   pods:
+  #     metric:
+  #       name: http_requests_per_second
+  #     target:
+  #       type: AverageValue
+  #       averageValue: "1000"
+  
+  # Поведение масштабирования
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # 5 минут стабильности перед scale down
+      policies:
+      - type: Percent
+        value: 50  # Уменьшать максимум на 50% за раз
+        periodSeconds: 60
+      - type: Pods
+        value: 1  # Или уменьшать максимум на 1 под за раз
+        periodSeconds: 60
+      selectPolicy: Min  # Выбирать минимальное изменение
+    
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Без задержки на scale up
+      policies:
+      - type: Percent
+        value: 100  # Увеличивать до 100% за раз
+        periodSeconds: 30
+      - type: Pods
+        value: 2  # Или добавлять максимум 2 пода за раз
+        periodSeconds: 30
+      selectPolicy: Max  # Выбирать максимальное изменение
