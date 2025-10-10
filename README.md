@@ -5,9 +5,9 @@
 > Enterprise-grade AI Model Aggregator с маршрутизацией, ценообразованием, аналитикой и полной observability
 
 [![Status](https://img.shields.io/badge/status-beta-yellow)](/)
-[![Test Coverage](https://img.shields.io/badge/coverage-passing-brightgreen)](/)
+[![Test Coverage](https://img.shields.io/badge/coverage-~80%25-brightgreen)](/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue)](/)
-[![Kubernetes](https://img.shields.io/badge/kubernetes-ready-blue)](/)
+[![Kubernetes](https://img.shields.io/badge/kubernetes-experimental-lightblue)](/)
 [![License](https://img.shields.io/badge/License-Proprietary-red)](/)
 
 ---
@@ -18,10 +18,46 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 
 - 🔀 **Автоматически выбирает** оптимальную модель (цена/скорость/качество)
 - 💰 **Прозрачное ценообразование** на основе токенов с нормализацией к кредитам
-- 🔄 **Умные fallback** при недоступности провайдеров (повышение доступности за счёт резервных провайдеров)
+- 🔄 **Умные fallback** при недоступности провайдеров (в стадии тестирования)
 - 📊 **Детальная аналитика** использования и затрат
 - 🔐 **Enterprise security** с JWT, API keys rotation, CORS
-- 📈 **Production observability** с Prometheus, Grafana, OpenTelemetry
+- 📈 **Observability** с Prometheus, Grafana, OpenTelemetry (в разработке)
+
+---
+
+## 📍 Статус проекта и дорожная карта
+
+### ✅ Что уже работает (Beta)
+
+- ✅ Token-based ценообразование с нормализацией к кредитам
+- ✅ Интеллектуальная маршрутизация (cost/latency/quality/balanced)
+- ✅ Интеграция с OpenAI, Anthropic, Stability AI, ElevenLabs
+- ✅ Circuit breaker и retry логика
+- ✅ Базовая аутентификация (JWT, API keys)
+- ✅ Health и readiness проbes
+- ✅ Prometheus metrics endpoint
+- ✅ Docker и docker-compose конфигурация
+- ✅ Базовое покрытие тестами (~80%)
+- ✅ Structured logging
+
+### 🚧 В активной разработке
+
+- 🚧 **Observability stack**: Настройка Grafana dashboards и OpenTelemetry трассировки
+- 🚧 **Real-world SLO**: Сбор метрик доступности и latency в production-like окружении
+- 🚧 **CI/CD pipeline**: GitHub Actions для automated testing и deployment
+- 🚧 **API versioning**: Формализация OpenAPI спецификации
+- 🚧 **Rate limiting**: Тонкая настройка лимитов per-user/per-project
+- 🚧 **Kubernetes production config**: StatefulSets, PVC, HPA, ingress
+
+### 🔮 В планах (Q2-Q3 2025)
+
+- 🔮 Расширенная аналитика (cost breakdown, usage patterns)
+- 🔮 Admin dashboard для управления провайдерами
+- 🔮 Webhooks для событий (quota exceeded, provider failures)
+- 🔮 Multi-region deployments
+- 🔮 Advanced caching strategies
+- 🔮 Cost optimization recommendations
+- 🔮 A/B testing для моделей
 
 ---
 
@@ -29,35 +65,35 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 
 ### 🤖 Поддерживаемые провайдеры
 
-| Провайдер | Модели | Тип |
-|-----------|--------|-----|
-| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-4o, GPT-3.5-turbo, DALL-E | Text, Image |
-| **Anthropic** | Claude 3 Opus, Sonnet, Haiku | Text |
-| **Stability AI** | Stable Diffusion XL, SD3 | Image |
-| **ElevenLabs** | Multilingual v2 | Audio |
+| Провайдер | Модели | Тип | Статус |
+|-----------|--------|-----|--------|
+| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-4o, GPT-3.5-turbo, DALL-E | Text, Image | ✅ Stable |
+| **Anthropic** | Claude 3 Opus, Sonnet, Haiku | Text | ✅ Stable |
+| **Stability AI** | Stable Diffusion XL, SD3 | Image | 🚧 Testing |
+| **ElevenLabs** | Multilingual v2 | Audio | 🚧 Testing |
 
 ### 💎 Production-Ready Features
 
 ✅ **Observability**
 - Prometheus metrics на `/metrics`
 - Structured logging (JSON)
-- OpenTelemetry distributed tracing
-- Health/readiness probes
+- Health/readiness probes (`/health`, `/ready`)
+- OpenTelemetry distributed tracing (🚧 в настройке)
 
 ✅ **Reliability**
 - Circuit breaker с exponential backoff
 - Retry логика с jitter
 - Timeouts (connect: 10s, read: 30s)
 - Идемпотентность запросов
-- Quotas per‑user/per‑provider/per‑project
+- Quotas per‑user/per‑provider/per‑project (🚧 в тестировании)
 
 ✅ **Security**
 - JWT authentication + refresh tokens
-- API keys с автоматической ротацией
+- API keys с автоматической ротацией (🚧 grace period testing)
 - Security headers (HSTS, CSP, X-Frame-Options)
 - Request size limits (10MB)
 - Secrets sanitization в логах
-- Rate limiting (60/min, 1000/hour)
+- Rate limiting (60/min, 1000/hour) — базовая реализация
 
 ✅ **Smart Routing**
 - Cost-optimized: минимальная стоимость
@@ -67,7 +103,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 
 ✅ **Token‑Based Billing**
 - Точный расчёт входящих и исходящих токенов для каждого запроса
-- Нормализация стоимости к кредитам (по умолчанию 1 USD = 100 кредитов)
+- Нормализация стоимости к кредитам (по умолчанию 1 USD = 100 кредитов)
 - Поддержка нескольких провайдеров и моделей
 - Property‑based тесты (Hypothesis)
 
@@ -79,7 +115,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 
 ### Предварительные требования
 
-- Python 3.11+
+- **Python 3.11+** (tested on 3.11, 3.12)
 - Docker 20.10+ и Docker Compose 2.0+
 - PostgreSQL 14+ (или используйте docker-compose)
 - Redis 7+ (или используйте docker-compose)
@@ -91,10 +127,17 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 git clone https://github.com/voroninsergei/oneflow-ai.git
 cd oneflow-ai
 
-# 2. Установка зависимостей
-make install
+# 2. Создание виртуального окружения
+python3.11 -m venv venv
+source venv/bin/activate  # На Windows: venv\Scripts\activate
 
-# 3. Конфигурация
+# 3. Установка зависимостей
+pip install -r requirements.txt
+
+# Для разработки:
+pip install -r requirements-dev.txt
+
+# 4. Конфигурация
 cp .env.example .env
 nano .env  # Добавить API ключи провайдеров
 ```
@@ -103,48 +146,87 @@ nano .env  # Добавить API ключи провайдеров
 
 ```bash
 # Запуск всех сервисов (PostgreSQL, Redis, Prometheus, Grafana)
-make docker-up
+docker-compose up -d postgres redis
+
+# Применение миграций
+alembic upgrade head
 
 # Запуск development сервера
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+
+# Или через Makefile:
 make dev
 
 # Открыть API документацию
 open http://localhost:8000/docs
 ```
 
+### Доступные эндпоинты
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Readiness probe
+curl http://localhost:8000/ready
+
+# Prometheus metrics
+curl http://localhost:8000/metrics
+
+# API v1 endpoints
+curl http://localhost:8000/api/v1/estimate  # POST
+curl http://localhost:8000/api/v1/request   # POST
+
+# Swagger UI
+http://localhost:8000/docs
+
+# ReDoc
+http://localhost:8000/redoc
+```
+
 ### Docker развёртывание
 
 ```bash
 # Сборка образа
+docker build -t oneflow-ai:0.1.0 .
+
+# Или через Makefile:
 make docker-build
 
 # Запуск полного stack
-make docker-up
+docker-compose up -d
 
 # Проверка здоровья
-scripts/health_check.sh
+./scripts/health_check.sh
 
 # Просмотр метрик
 open http://localhost:8000/metrics
 ```
 
-### Kubernetes развёртывание
+### Kubernetes развёртывание (Experimental)
+
+> **Warning:** Kubernetes конфигурация находится в экспериментальной стадии. Перед production использованием требуется дополнительная настройка StatefulSets, PVC, и ingress.
 
 ```bash
+# Создание namespace
+kubectl create namespace oneflow-ai
+
 # Создание secrets
 kubectl create secret generic oneflow-secrets \
+  --namespace oneflow-ai \
   --from-literal=JWT_SECRET=$(openssl rand -hex 32) \
+  --from-literal=DATABASE_PASSWORD=$(openssl rand -hex 16) \
   --from-literal=OPENAI_API_KEY=sk-your-key \
   --from-literal=ANTHROPIC_API_KEY=sk-ant-your-key
 
-# Развёртывание
-make k8s-deploy
+# Развёртывание (basic config)
+kubectl apply -f k8s/ --namespace oneflow-ai
 
 # Проверка статуса
-make k8s-status
+kubectl get pods -n oneflow-ai
 
-# Port forward
-make k8s-port-forward
+# Port forward для локального тестирования
+kubectl port-forward -n oneflow-ai service/oneflow-ai 8000:8000
 ```
 
 ---
@@ -201,7 +283,8 @@ curl -X POST http://localhost:8000/api/v1/estimate \
   -d '{
     "input_tokens": 1500,
     "output_tokens": 500,
-    "strategy": "cost_optimized"
+    "strategy": "cost_optimized",
+    "modality": "text"
   }'
 
 # Обработка запроса
@@ -221,8 +304,11 @@ curl -X POST http://localhost:8000/api/v1/request \
 ### Метрики (Prometheus)
 
 ```bash
+# Запуск Prometheus через docker-compose
+docker-compose up -d prometheus
+
 # Открыть Prometheus UI
-make prometheus
+open http://localhost:9090
 
 # Примеры запросов (PromQL):
 # Request rate
@@ -235,28 +321,47 @@ rate(http_request_duration_seconds_count[5m])
 # Error rate
 sum(rate(http_requests_total{status=~"5.."}[5m])) / 
 sum(rate(http_requests_total[5m]))
+
+# Circuit breaker status
+circuit_breaker_state{provider="openai"}
 ```
 
 ### Dashboards (Grafana)
 
 ```bash
-# Открыть Grafana (admin/admin)
-make grafana
+# Запуск Grafana через docker-compose
+docker-compose up -d grafana
 
-# Импортировать дашборды:
+# Открыть Grafana (admin/admin)
+open http://localhost:3000
+
+# Готовые дашборды для импорта:
 # - FastAPI: ID 11713
 # - PostgreSQL: ID 9628
 # - Redis: ID 11835
+
+# 🚧 Custom дашборды в разработке
 ```
 
-### Distributed Tracing (Jaeger)
+### Distributed Tracing (Jaeger) — 🚧 In Progress
 
 ```bash
 # Включить в .env
 ENABLE_TRACING=true
+JAEGER_AGENT_HOST=localhost
+JAEGER_AGENT_PORT=6831
+
+# Запуск Jaeger (требует дополнительную настройку)
+docker run -d --name jaeger \
+  -p 5775:5775/udp \
+  -p 6831:6831/udp \
+  -p 6832:6832/udp \
+  -p 5778:5778 \
+  -p 16686:16686 \
+  jaegertracing/all-in-one:latest
 
 # Открыть Jaeger UI
-make jaeger
+open http://localhost:16686
 ```
 
 ---
@@ -264,23 +369,36 @@ make jaeger
 ## 🧪 Тестирование
 
 ```bash
-# Все тесты
-make test
+# Все unit тесты
+pytest tests/
 
 # С coverage
-make test-coverage
+pytest --cov=src --cov-report=html tests/
 
 # Property-based тесты
-make test-property
+pytest tests/test_pricing_property.py -v
 
-# Linting
-make lint
+# Integration тесты (требуют запущенные сервисы)
+docker-compose up -d postgres redis
+pytest tests/integration/ -v
 
-# Форматирование
-make format
+# Через Makefile:
+make test              # Все тесты
+make test-coverage     # С coverage report
+make test-property     # Property-based
+```
 
-# Полная проверка перед prod
-make prod-check
+### Текущее покрытие
+
+```
+Name                           Stmts   Miss  Cover
+--------------------------------------------------
+src/pricing_v2.py               234     28    88%
+src/middleware/circuit_breaker  156     35    78%
+src/api/routes.py               189     42    78%
+src/models/                     142     18    87%
+--------------------------------------------------
+TOTAL                          1247    247    80%
 ```
 
 ---
@@ -291,6 +409,7 @@ make prod-check
 - **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Чеклист перед релизом
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Сводка изменений
 - **[API Docs](http://localhost:8000/docs)** - OpenAPI/Swagger документация
+- **[ReDoc](http://localhost:8000/redoc)** - Alternative API documentation
 
 ---
 
@@ -343,12 +462,12 @@ make prod-check
 ### Встроенная защита
 
 - **Authentication**: JWT tokens + API keys
-- **Authorization**: Role-based access control
-- **Rate Limiting**: 60 req/min, 1000 req/hour
-- **Input Validation**: Pydantic models
+- **Authorization**: Role-based access control (🚧 базовая реализация)
+- **Rate Limiting**: 60 req/min, 1000 req/hour (настраивается)
+- **Input Validation**: Pydantic models с strict validation
 - **SQL Injection**: SQLAlchemy ORM
 - **XSS Protection**: Security headers
-- **Secrets Management**: Rotation + grace period
+- **Secrets Management**: Rotation + grace period (🚧 в тестировании)
 
 ### Security Headers
 
@@ -358,19 +477,24 @@ X-Frame-Options: DENY
 X-XSS-Protection: 1; mode=block
 Strict-Transport-Security: max-age=31536000
 Referrer-Policy: strict-origin-when-cross-origin
+Content-Security-Policy: default-src 'self'
 ```
 
 ### Проверка безопасности
 
 ```bash
-# Security audit
-make security-check
+# Security audit с bandit
+bandit -r src/ -f json -o security-report.json
 
 # Dependency audit
-make audit
+pip-audit
 
-# Container scanning
-docker scan oneflow-ai:2.0.0
+# Container scanning (если установлен Trivy)
+trivy image oneflow-ai:0.1.0
+
+# Через Makefile:
+make security-check
+make audit
 ```
 
 ---
@@ -389,7 +513,7 @@ docker scan oneflow-ai:2.0.0
 | Claude 3 Sonnet | $3.00 | $15.00 | 0.30 - 1.50 |
 | Claude 3 Haiku | $0.25 | $1.25 | 0.03 - 0.13 |
 
-*Цены актуальны на январь 2025*
+*Цены актуальны на январь 2025 и могут изменяться провайдерами*
 
 ### Пример расчёта
 
@@ -405,21 +529,30 @@ credits = 0.075 * 100 = 7.5 credits
 
 ## 📈 Performance & Observability
 
-### SLI/SLO Targets
+### SLI/SLO Targets (Beta Goals)
 
-Во время бета‑фазы мы собираем реальные метрики и формируем целевые уровни обслуживания (SLO).  Таблица ниже отражает **ожидаемые** цели, а не фактические показатели.
+Во время бета‑фазы мы собираем реальные метрики и формируем целевые уровни обслуживания (SLO).  Таблица ниже отражает **ожидаемые** цели, а не фактические показатели production окружения.
 
-| Метрика | Цель | Комментарий |
-|---------|------|-------------|
-| **Доступность** | ≥ 95 % | Повышается за счёт автоматических fallback‑ов; цель уточняется по мере накопления данных |
-| **Latency p95** | < 1 сек | Время ответа для 95 % запросов; зависит от выбранного провайдера |
-| **Latency p99** | < 2 сек | Время ответа для 99 % запросов |
-| **Ошибка 5xx** | < 1 % | Доля запросов, завершившихся ошибкой сервера |
-| **Пропускная способность** | 500 req/s | Цель для single‑node развертывания; масштабирование возможно |
+| Метрика | Цель (Beta) | Статус | Комментарий |
+|---------|-------------|--------|-------------|
+| **Доступность** | ≥ 95% | 🚧 Measuring | Повышается за счёт fallback‑ов; цель уточняется по мере накопления данных |
+| **Latency p95** | < 2s | 🚧 Measuring | Время ответа для 95% запросов; зависит от провайдера |
+| **Latency p99** | < 5s | 🚧 Measuring | Время ответа для 99% запросов |
+| **Ошибка 5xx** | < 1% | 🚧 Measuring | Доля запросов, завершившихся ошибкой сервера |
+| **Throughput** | 100-500 req/s | 🚧 Tuning | Для single‑node; масштабирование возможно через horizontal scaling |
+
+> **Note:** Эти цели будут уточнены после накопления статистики в production-like окружении. Фактическая производительность сильно зависит от инфраструктуры и нагрузки.
 
 ### Наблюдаемость
 
-Проект интегрирован с Prometheus, Grafana и OpenTelemetry.  В каталоге `monitoring/` можно найти примеры конфигураций для сбора метрик и трассировки.  Бенчмарки и нагрузочное тестирование следует проводить самостоятельно в целевом окружении (например, с помощью k6), поскольку результаты сильно зависят от инфраструктуры.
+Проект интегрирован с Prometheus для сбора метрик. Grafana dashboards и OpenTelemetry трассировка находятся в стадии активной разработки.  В каталоге `monitoring/` можно найти примеры конфигураций.  
+
+**Рекомендуется проводить собственные нагрузочные тесты** в целевом окружении (например, с помощью k6, Locust, или Apache Bench), поскольку результаты сильно зависят от инфраструктуры.
+
+```bash
+# Пример нагрузочного теста с k6
+k6 run --vus 10 --duration 30s tests/load/scenario.js
+```
 
 ---
 
@@ -430,11 +563,11 @@ credits = 0.075 * 100 = 7.5 credits
 ```bash
 make install          # Установка зависимостей
 make install-dev      # Установка с dev dependencies
-make dev              # Запуск dev сервера
+make dev              # Запуск dev сервера (uvicorn с reload)
 make test             # Запуск всех тестов
 make test-coverage    # Тесты с coverage
-make lint             # Проверка кода
-make format           # Форматирование кода
+make lint             # Проверка кода (flake8, black --check)
+make format           # Форматирование кода (black, isort)
 make type-check       # Проверка типов (mypy)
 ```
 
@@ -450,7 +583,7 @@ make docker-shell     # Shell в контейнере
 make docker-clean     # Очистка volumes и images
 ```
 
-### Kubernetes
+### Kubernetes (Experimental)
 
 ```bash
 make k8s-deploy       # Развёртывание в K8s
@@ -463,28 +596,28 @@ make k8s-port-forward # Port forward на localhost
 ### Database
 
 ```bash
-make db-migrate       # Применить миграции
+make db-migrate       # Применить миграции (alembic upgrade head)
 make db-rollback      # Откатить миграцию
-make db-reset         # Сброс БД (ОПАСНО!)
-make db-shell         # PostgreSQL shell
+make db-reset         # Сброс БД (ОПАСНО! Удаляет все данные)
+make db-shell         # PostgreSQL shell (psql)
 ```
 
 ### Monitoring
 
 ```bash
-make prometheus       # Открыть Prometheus
-make grafana          # Открыть Grafana
-make jaeger           # Открыть Jaeger
+make prometheus       # Открыть Prometheus UI
+make grafana          # Открыть Grafana UI
+make jaeger           # Открыть Jaeger UI (требует настройку)
 ```
 
 ### Maintenance
 
 ```bash
-make clean            # Очистка временных файлов
-make clean-all        # Полная очистка
-make security-check   # Проверка безопасности
-make audit            # Аудит зависимостей
-make prod-check       # Все проверки перед prod
+make clean            # Очистка временных файлов (__pycache__, .pytest_cache)
+make clean-all        # Полная очистка (включая .venv, volumes)
+make security-check   # Проверка безопасности (bandit)
+make audit            # Аудит зависимостей (pip-audit)
+make prod-check       # Все проверки перед prod (lint+test+security)
 make prod-build       # Сборка production образа
 ```
 
@@ -497,8 +630,10 @@ make prod-build       # Сборка production образа
 ```bash
 ENVIRONMENT=development
 LOG_LEVEL=DEBUG
-DATABASE_URL=postgresql://localhost:5432/oneflow
+DATABASE_URL=postgresql://oneflow:password@localhost:5432/oneflow_dev
 REDIS_URL=redis://localhost:6379/0
+ENABLE_METRICS=true
+ENABLE_TRACING=false
 ```
 
 ### Staging
@@ -506,9 +641,10 @@ REDIS_URL=redis://localhost:6379/0
 ```bash
 ENVIRONMENT=staging
 LOG_LEVEL=INFO
-DATABASE_URL=postgresql://staging-db:5432/oneflow
+DATABASE_URL=postgresql://oneflow:password@staging-db:5432/oneflow_staging
 REDIS_URL=redis://staging-redis:6379/0
 ENABLE_TRACING=true
+ENABLE_METRICS=true
 ```
 
 ### Production
@@ -516,17 +652,19 @@ ENABLE_TRACING=true
 ```bash
 ENVIRONMENT=production
 LOG_LEVEL=WARNING
-DATABASE_URL=postgresql://prod-db:5432/oneflow
+DATABASE_URL=postgresql://oneflow:secure_password@prod-db:5432/oneflow_prod
 REDIS_URL=redis://prod-redis:6379/0
 ENABLE_METRICS=true
 ENABLE_TRACING=true
+DATABASE_POOL_SIZE=30
+DATABASE_MAX_OVERFLOW=10
 ```
 
 ---
 
-## 🔄 CI/CD Pipeline
+## 🔄 CI/CD Pipeline (Planned)
 
-### GitHub Actions (пример)
+### GitHub Actions (Coming Soon)
 
 ```yaml
 name: CI/CD
@@ -538,6 +676,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       - name: Run tests
         run: make test-coverage
       - name: Security check
@@ -569,39 +715,63 @@ jobs:
 
 ```bash
 # Проверить логи
-make docker-logs
+docker-compose logs -f oneflow-ai
 
 # Проверить health
 curl http://localhost:8000/health
 
+# Проверить readiness
+curl http://localhost:8000/ready
+
 # Перезапустить
-make docker-restart
+docker-compose restart oneflow-ai
 ```
 
 ### Проблема: High latency
 
 ```bash
 # Проверить метрики
-open http://localhost:9090
+curl http://localhost:8000/metrics | grep http_request_duration
 
 # Проверить circuit breaker
-curl http://localhost:8000/metrics | grep circuit
+curl http://localhost:8000/metrics | grep circuit_breaker_state
 
-# Проверить connections
-kubectl get pods -n oneflow-ai
+# Проверить статус сервисов
+docker-compose ps
+
+# Увеличить timeout в .env
+HTTP_TIMEOUT=60
 ```
 
 ### Проблема: Database connection errors
 
 ```bash
 # Проверить PostgreSQL
-make db-shell
+docker-compose exec postgres psql -U oneflow -d oneflow_dev
 
 # Проверить connection pool
 curl http://localhost:8000/metrics | grep db_pool
 
+# Проверить миграции
+alembic current
+alembic history
+
 # Увеличить pool size в .env
 DATABASE_POOL_SIZE=30
+DATABASE_MAX_OVERFLOW=10
+```
+
+### Проблема: Circuit breaker открывается слишком часто
+
+```bash
+# Проверить метрики ошибок провайдера
+curl http://localhost:8000/metrics | grep provider_errors
+
+# Увеличить failure threshold
+CIRCUIT_BREAKER_FAILURE_THRESHOLD=10
+
+# Увеличить timeout window
+CIRCUIT_BREAKER_TIMEOUT=120
 ```
 
 ---
@@ -643,11 +813,23 @@ DATABASE_POOL_SIZE=30
 
 ```bash
 # Перед коммитом
-make format
-make lint
-make test
-make type-check
+make format       # Black + isort
+make lint         # Flake8
+make type-check   # Mypy
+make test         # Pytest
+
+# Или все сразу:
+make prod-check
 ```
+
+### Требования к PR
+
+- ✅ Все тесты проходят
+- ✅ Coverage не снижается
+- ✅ Код отформатирован (black, isort)
+- ✅ Нет warnings от flake8 и mypy
+- ✅ Добавлены тесты для новой функциональности
+- ✅ Обновлена документация
 
 ---
 
@@ -679,21 +861,28 @@ See [LICENSE](LICENSE) file for details.
 
 ```
 ┌─────────────────────────────────────────┐
-│  Project Status:        Beta            │
+│  Project Status:        Beta Preview    │
+│  Version:               0.1.0            │
 ├─────────────────────────────────────────┤
-│  👀 Observability:       In progress     │
-│  🔧 Reliability:         Improving       │
-│  🔒 Security:            First‑class      │
-│  🚀 Performance:         Tuning          │
-│  🏗️ Infrastructure:      Docker/K8s ready│
+│  👀 Observability:       🚧 In Progress  │
+│  🔧 Reliability:         ✅ Core Ready    │
+│  🔒 Security:            ✅ First‑class   │
+│  🚀 Performance:         🚧 Tuning       │
+│  🏗️ Infrastructure:      ✅ Docker Ready  │
+│  ☸️  Kubernetes:         🚧 Experimental │
 ├─────────────────────────────────────────┤
 │  📝 Files:               50+             │
-│  🧪 Tests:               80+ (≈80%)      │
+│  🧪 Test Coverage:       ~80%            │
 │  📚 Documentation:       Extensive       │
-│  🐳 Docker:              Supported       │
-│  ☸️  Kubernetes:         Supported       │
+│  🐳 Docker:              ✅ Supported     │
+│  🔄 CI/CD:               🚧 Planned       │
 └─────────────────────────────────────────┘
 ```
+
+### Legend
+- ✅ **Ready**: Функциональность реализована и протестирована
+- 🚧 **In Progress**: Активная разработка или настройка
+- 🔮 **Planned**: Запланировано на будущее
 
 ---
 
