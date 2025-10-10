@@ -8,18 +8,9 @@ services:
       dockerfile: Dockerfile
     container_name: oneflow-ai-app
     ports:
-      - "8000:8000"
-    environment:
-      - ENVIRONMENT=development
-      - LOG_LEVEL=INFO
-      - DATABASE_URL=postgresql://oneflow:oneflow_password@postgres:5432/oneflow
-      - REDIS_URL=redis://redis:6379/0
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      - ENABLE_METRICS=true
-      - ENABLE_TRACING=false
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      - "${APP_PORT:-8000}:8000"
     env_file:
-      - .env  # API ключи провайдеров
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,117 +26,259 @@ services:
       retries: 3
       start_period: 40s
     volumes:
-      - ./logs:/app/logs
+      - app_logs:/app/logs
+      - app_data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # ===== PostgreSQL Database =====
   postgres:
     image: postgres:16-alpine
     container_name: oneflow-postgres
-    environment:
-      - POSTGRES_USER=oneflow
-      - POSTGRES_PASSWORD=oneflow_password
-      - POSTGRES_DB=oneflow
-      - PGDATA=/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env.postgres
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
     networks:
       - oneflow-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U oneflow"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oneflow} -d ${POSTGRES_DB:-oneflow}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    profiles:
+      - full
+      - db
 
   # ===== Redis Cache =====
   redis:
     image: redis:7-alpine
     container_name: oneflow-redis
+    env_file:
+      - .env.redis
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --requirepass redis_password
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      sh -c "redis-server
+      --appendonly yes
+      --requirepass $${REDIS_PASSWORD:-redis_password}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru"
     volumes:
       - redis_data:/data
     networks:
       - oneflow-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   # ===== Prometheus (Metrics) =====
   prometheus:
     image: prom/prometheus:latest
     container_name: oneflow-prometheus
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
     networks:
       - oneflow-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    profiles:
+      - full
+      - monitoring
 
   # ===== Grafana (Dashboards) =====
   grafana:
     image: grafana/grafana:latest
     container_name: oneflow-grafana
     ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - "${GRAFANA_PORT:-3000}:3000"
+    env_file:
+      - .env.grafana
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     networks:
       - oneflow-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    profiles:
+      - full
+      - monitoring
 
-  # ===== Jaeger (Distributed Tracing) - опционально =====
+  # ===== Jaeger (Distributed Tracing) =====
   jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: oneflow-jaeger
     ports:
-      - "5775:5775/udp"
-      - "6831:6831/udp"
-      - "6832:6832/udp"
-      - "5778:5778"
-      - "16686:16686"  # Jaeger UI
-      - "14268:14268"
-      - "14250:14250"
-      - "9411:9411"
+      - "${JAEGER_UDP_5775:-5775}:5775/udp"
+      - "${JAEGER_UDP_6831:-6831}:6831/udp"
+      - "${JAEGER_UDP_6832:-6832}:6832/udp"
+      - "${JAEGER_HTTP_5778:-5778}:5778"
+      - "${JAEGER_UI_PORT:-16686}:16686"
+      - "${JAEGER_HTTP_14268:-14268}:14268"
+      - "${JAEGER_GRPC_14250:-14250}:14250"
+      - "${JAEGER_ZIPKIN_9411:-9411}:9411"
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    volumes:
+      - jaeger_data:/badger
     networks:
       - oneflow-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    profiles:
+      - full
+      - tracing
+
+  # ===== pgAdmin (Database Management) - опционально =====
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: oneflow-pgadmin
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    env_file:
+      - .env.pgadmin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - oneflow-network
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    profiles:
+      - full
+      - db
 
 volumes:
   postgres_data:
     driver: local
+    name: oneflow_postgres_data
   redis_data:
     driver: local
+    name: oneflow_redis_data
   prometheus_data:
     driver: local
+    name: oneflow_prometheus_data
   grafana_data:
     driver: local
+    name: oneflow_grafana_data
+  jaeger_data:
+    driver: local
+    name: oneflow_jaeger_data
+  pgadmin_data:
+    driver: local
+    name: oneflow_pgadmin_data
+  app_logs:
+    driver: local
+    name: oneflow_app_logs
+  app_data:
+    driver: local
+    name: oneflow_app_data
 
 networks:
   oneflow-network:
     driver: bridge
+    name: oneflow_network
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
