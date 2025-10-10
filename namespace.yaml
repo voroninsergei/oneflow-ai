@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oneflow-ai
+  labels:
+    name: oneflow-ai
+    environment: production
