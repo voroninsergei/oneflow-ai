@@ -1,9 +1,8 @@
 """
-OneFlow.AI Main Module - Fixed Version
-Главный модуль OneFlow.AI - Исправленная версия
+OneFlow.AI Main Module - ИСПРАВЛЕНО
+Главный модуль OneFlow.AI - ИСПРАВЛЕНО
 
-Complete orchestrator implementation with all components integrated.
-Полная реализация оркестратора со всеми интегрированными компонентами.
+Полная реализация класса OneFlowAI с интеграцией всех компонентов.
 """
 
 from typing import Optional, Dict, Any
@@ -14,24 +13,27 @@ from wallet import Wallet
 from pricing import PricingCalculator
 from router import Router
 
-# Extended components (with fallback if not available)
+# Extended components
 try:
     from analytics import Analytics
     HAS_ANALYTICS = True
 except ImportError:
     HAS_ANALYTICS = False
+    print("Warning: Analytics module not available")
 
 try:
     from budget import Budget, BudgetPeriod
     HAS_BUDGET = True
 except ImportError:
     HAS_BUDGET = False
+    print("Warning: Budget module not available")
 
 try:
     from config import Config
     HAS_CONFIG = True
 except ImportError:
     HAS_CONFIG = False
+    print("Warning: Config module not available")
 
 # Providers
 from providers.gpt_provider import GPTProvider
@@ -44,9 +46,6 @@ class OneFlowAI:
     """
     Main orchestrator class for OneFlow.AI.
     Главный класс-оркестратор для OneFlow.AI.
-    
-    This class integrates all components: routing, pricing, wallet, analytics, and budget.
-    Этот класс интегрирует все компоненты: маршрутизацию, ценообразование, кошелёк, аналитику и бюджет.
     """
     
     def __init__(
@@ -70,21 +69,32 @@ class OneFlowAI:
         self.use_real_api = use_real_api
         
         # Initialize optional components
-        self.analytics = Analytics() if HAS_ANALYTICS else None
-        self.budget = Budget() if HAS_BUDGET else None
-        self.config = Config(config_file) if HAS_CONFIG and config_file else None
+        if HAS_ANALYTICS:
+            self.analytics = Analytics()
+        else:
+            self.analytics = None
+            
+        if HAS_BUDGET:
+            self.budget = Budget()
+        else:
+            self.budget = None
+            
+        if HAS_CONFIG and config_file:
+            self.config = Config(config_file)
+        else:
+            self.config = None
         
         # Setup system
         self._setup_pricing()
         self._setup_providers()
     
     def _setup_pricing(self):
-        """Setup default pricing rates for all providers."""
+        """Setup default pricing rates."""
         rates = {
-            'gpt': 1.0,      # per word
-            'image': 10.0,   # per image
-            'audio': 5.0,    # per audio
-            'video': 20.0    # per video
+            'gpt': 1.0,
+            'image': 10.0,
+            'audio': 5.0,
+            'video': 20.0
         }
         for provider, rate in rates.items():
             self.pricing.register_rate(provider, rate)
@@ -92,36 +102,28 @@ class OneFlowAI:
     def _setup_providers(self):
         """Setup providers based on API mode."""
         if self.use_real_api:
-            self._setup_real_providers()
+            try:
+                from real_api_integration import create_provider
+                for ptype in ['gpt', 'image', 'audio', 'video']:
+                    try:
+                        provider = create_provider(ptype, use_real_api=True)
+                        self.router.register_provider(provider)
+                    except:
+                        self._register_mock_provider(ptype)
+            except ImportError:
+                self._setup_mock_providers()
         else:
             self._setup_mock_providers()
     
-    def _setup_real_providers(self):
-        """Setup real API providers."""
-        try:
-            from real_api_integration import create_provider
-            
-            for provider_type in ['gpt', 'image', 'audio', 'video']:
-                try:
-                    provider = create_provider(provider_type, use_real_api=True)
-                    self.router.register_provider(provider)
-                except Exception as e:
-                    print(f"Warning: Could not initialize {provider_type} provider: {e}")
-                    # Fallback to mock for this provider
-                    self._register_mock_provider(provider_type)
-        except ImportError:
-            print("Warning: Real API integration module not found. Using mock providers.")
-            self._setup_mock_providers()
-    
     def _setup_mock_providers(self):
-        """Setup mock providers for testing."""
+        """Setup mock providers."""
         self.router.register_provider(GPTProvider(name='gpt'))
         self.router.register_provider(ImageProvider(name='image'))
         self.router.register_provider(AudioProvider(name='audio'))
         self.router.register_provider(VideoProvider(name='video'))
     
     def _register_mock_provider(self, provider_type: str):
-        """Register a single mock provider."""
+        """Register single mock provider."""
         providers_map = {
             'gpt': GPTProvider,
             'image': ImageProvider,
@@ -129,75 +131,71 @@ class OneFlowAI:
             'video': VideoProvider
         }
         if provider_type in providers_map:
-            provider_class = providers_map[provider_type]
-            self.router.register_provider(provider_class(name=provider_type))
+            self.router.register_provider(
+                providers_map[provider_type](name=provider_type)
+            )
     
     def process_request(self, model: str, prompt: str, **kwargs) -> Dict[str, Any]:
         """
-        Process AI request with full validation and tracking.
-        Обработать AI запрос с полной валидацией и отслеживанием.
+        Process AI request.
         
         Args:
             model: Model type (gpt, image, audio, video).
             prompt: Input prompt.
-            **kwargs: Additional parameters.
         
         Returns:
-            dict: Result with status, response, cost, and balance.
+            dict: Result with status, response, cost, balance.
         """
         model_lower = model.lower()
         
-        # Calculate cost based on model type
+        # Calculate cost
         if model_lower == 'gpt':
-            cost_units = len(prompt.split())  # Cost per word
+            cost_units = len(prompt.split())
         else:
-            cost_units = 1  # Flat rate for other models
+            cost_units = 1
         
         cost = self.pricing.estimate_cost(model_lower, cost_units)
         
-        # Check budget if available
+        # Check budget
         if self.budget:
             can_spend, reason = self.budget.can_spend(cost, provider=model_lower)
             if not can_spend:
                 return {
                     'status': 'error',
-                    'message': f'Budget limit exceeded: {reason}',
+                    'message': f'Budget limit: {reason}',
                     'cost': 0,
                     'balance': self.wallet.get_balance()
                 }
         
-        # Check wallet balance
+        # Check wallet
         if not self.wallet.can_afford(cost):
             return {
                 'status': 'error',
-                'message': f'Insufficient funds. Need {cost} credits, have {self.wallet.get_balance()}',
+                'message': f'Insufficient funds',
                 'cost': cost,
                 'balance': self.wallet.get_balance()
             }
         
-        # Process request through router
+        # Process request
         try:
             request_data = {'type': model_lower, 'prompt': prompt}
             response = self.router.route_request(request_data)
             
             if response is None:
-                raise Exception(f"No provider available for type: {model_lower}")
+                raise Exception(f"No provider for: {model_lower}")
             
             # Deduct cost
             self.wallet.deduct(cost)
             
-            # Record spending in budget
+            # Record spending
             if self.budget:
                 self.budget.record_spending(cost, provider=model_lower)
             
-            # Log to analytics
+            # Log analytics
             if self.analytics:
                 self.analytics.log_request(
-                    provider=model_lower,
-                    cost=cost,
-                    prompt=prompt,
-                    status='success',
-                    response=str(response)
+                    model_lower, cost, prompt,
+                    status='success', response=str(response)
                 )
             
             return {
@@ -209,36 +207,22 @@ class OneFlowAI:
             }
             
         except Exception as e:
-            # Log error to analytics
             if self.analytics:
                 self.analytics.log_request(
-                    provider=model_lower,
-                    cost=0,
-                    prompt=prompt,
-                    status='error',
-                    response=str(e)
+                    model_lower, 0, prompt,
+                    status='error', response=str(e)
                 )
             
             return {
                 'status': 'error',
-                'message': f'Provider error: {str(e)}',
+                'message': f'Error: {str(e)}',
                 'cost': 0,
                 'balance': self.wallet.get_balance()
             }
     
     def setup_budget(self, **limits):
-        """
-        Setup budget limits for different periods.
-        Настроить лимиты бюджета для разных периодов.
-        
-        Args:
-            **limits: Keyword arguments for period limits (daily, weekly, monthly, total).
-        
-        Example:
-            system.setup_budget(daily=50, weekly=300)
-        """
+        """Setup budget limits."""
         if not self.budget:
-            print("Warning: Budget module not available")
             return
         
         for period_name, amount in limits.items():
@@ -247,180 +231,99 @@ class OneFlowAI:
                     period = BudgetPeriod[period_name.upper()]
                     self.budget.set_limit(period, amount)
                 except KeyError:
-                    print(f"Warning: Invalid budget period: {period_name}")
+                    pass
     
     def setup_provider_budget(self, provider: str, amount: float):
-        """
-        Setup budget limit for a specific provider.
-        Настроить лимит бюджета для конкретного провайдера.
-        
-        Args:
-            provider: Provider name (gpt, image, audio, video).
-            amount: Budget limit amount.
-        """
-        if not self.budget:
-            print("Warning: Budget module not available")
-            return
-        
-        self.budget.set_provider_limit(provider, amount)
+        """Setup provider budget."""
+        if self.budget:
+            self.budget.set_provider_limit(provider, amount)
     
     def get_status(self) -> str:
-        """
-        Get formatted system status.
-        Получить форматированный статус системы.
-        
-        Returns:
-            str: Formatted status report.
-        """
-        lines = []
+        """Get system status."""
+        lines = ["=" * 60]
+        lines.append("OneFlow.AI Status")
         lines.append("=" * 60)
-        lines.append("OneFlow.AI System Status | Статус системы OneFlow.AI")
-        lines.append("=" * 60)
-        lines.append(f"\nAPI Mode: {'Real API' if self.use_real_api else 'Mock (Demo)'}")
+        lines.append(f"\nMode: {'Real API' if self.use_real_api else 'Mock'}")
         lines.append(f"Balance: {self.wallet.get_balance():.2f} credits")
         
         if self.analytics:
-            total_requests = self.analytics.get_request_count()
-            total_cost = self.analytics.get_total_cost()
-            
-            lines.append(f"\nTotal Requests: {total_requests}")
-            lines.append(f"Total Cost: {total_cost:.2f} credits")
-            
-            if total_requests > 0:
-                avg_cost = self.analytics.get_average_cost_per_request()
-                most_used = self.analytics.get_most_used_provider()
-                
-                lines.append(f"Average Cost per Request: {avg_cost:.2f} credits")
-                lines.append(f"Most Used Provider: {most_used}")
-        
-        if self.budget:
-            lines.append("\n" + "-" * 60)
-            lines.append("Budget Status:")
-            
-            for period in [BudgetPeriod.DAILY, BudgetPeriod.WEEKLY, BudgetPeriod.MONTHLY]:
-                remaining = self.budget.get_remaining(period)
-                if remaining is not None:
-                    spent = self.budget.get_spent(period)
-                    limit = self.budget.limits[period]
-                    lines.append(f"  {period.value.capitalize()}: {spent:.2f}/{limit:.2f} (remaining: {remaining:.2f})")
+            lines.append(f"Requests: {self.analytics.get_request_count()}")
+            lines.append(f"Total cost: {self.analytics.get_total_cost():.2f}")
         
         lines.append("=" * 60)
         return "\n".join(lines)
     
     def add_credits(self, amount: float):
-        """
-        Add credits to wallet.
-        Добавить кредиты в кошелёк.
-        
-        Args:
-            amount: Amount to add.
-        """
+        """Add credits."""
         self.wallet.add_credits(amount)
     
     def get_analytics_summary(self) -> Optional[str]:
-        """
-        Get analytics summary report.
-        Получить сводный отчёт аналитики.
-        
-        Returns:
-            str: Analytics report or None if analytics not available.
-        """
-        if not self.analytics:
-            return "Analytics module not available"
-        
-        return self.analytics.get_summary_report()
+        """Get analytics summary."""
+        if self.analytics:
+            return self.analytics.get_summary_report()
+        return "Analytics not available"
     
     def get_budget_summary(self) -> Optional[str]:
-        """
-        Get budget summary report.
-        Получить сводный отчёт бюджета.
-        
-        Returns:
-            str: Budget report or None if budget not available.
-        """
-        if not self.budget:
-            return "Budget module not available"
-        
-        return self.budget.get_budget_summary()
+        """Get budget summary."""
+        if self.budget:
+            return self.budget.get_budget_summary()
+        return "Budget not available"
 
 
 def run_workflow():
-    """
-    Run the main OneFlow.AI workflow demonstration.
-    Запуск основного демонстрационного рабочего процесса OneFlow.AI.
-    """
+    """Run interactive workflow."""
     print("=" * 60)
     print("OneFlow.AI - Interactive Demo")
     print("=" * 60)
     
-    # Initialize system
     system = OneFlowAI(initial_balance=100, use_real_api=False)
     
     print(f"\nInitial balance: {system.wallet.get_balance()} credits")
     print("\nAvailable models: gpt, image, audio, video")
     
-    # Interactive input
     try:
-        model = input("\nEnter model type: ").strip()
-        prompt = input("Enter your prompt: ").strip()
+        model = input("\nEnter model: ").strip()
+        prompt = input("Enter prompt: ").strip()
         
         if not model or not prompt:
-            print("\nError: Model and prompt are required")
+            print("\nError: Model and prompt required")
             return
         
-        # Process request
-        print("\nProcessing request...")
+        print("\nProcessing...")
         result = system.process_request(model, prompt)
         
-        # Display result
         print("\n" + "=" * 60)
         if result['status'] == 'success':
-            print("✓ Request Successful")
+            print("✓ Success")
             print(f"\nResponse: {result['response']}")
             print(f"Cost: {result['cost']} credits")
-            print(f"Remaining Balance: {result['balance']} credits")
-        else:
-            print("✗ Request Failed")
-            print(f"\nError: {result['message']}")
             print(f"Balance: {result['balance']} credits")
+        else:
+            print("✗ Failed")
+            print(f"\nError: {result['message']}")
         print("=" * 60)
         
     except KeyboardInterrupt:
-        print("\n\nInterrupted by user")
-    except Exception as e:
-        print(f"\n\nError: {e}")
+        print("\n\nInterrupted")
 
 
 def main():
-    """
-    Main entry point.
-    Главная точка входа.
-    """
+    """Main entry point."""
     if len(sys.argv) > 1 and sys.argv[1] == '--demo':
-        # Run demo with predefined scenarios
-        print("Running demo mode...")
         system = OneFlowAI(initial_balance=100)
         
-        # Demo scenario
         scenarios = [
             ('gpt', 'Hello world'),
-            ('image', 'Beautiful sunset'),
-            ('audio', 'Relaxing music'),
+            ('image', 'Sunset'),
         ]
         
         for model, prompt in scenarios:
-            print(f"\n--- Testing {model} ---")
+            print(f"\n--- {model} ---")
             result = system.process_request(model, prompt)
             print(f"Status: {result['status']}")
-            if result['status'] == 'success':
-                print(f"Cost: {result['cost']} credits")
-            else:
-                print(f"Error: {result.get('message')}")
         
-        # Show final status
         print("\n" + system.get_status())
     else:
-        # Run interactive mode
         run_workflow()
 
 
