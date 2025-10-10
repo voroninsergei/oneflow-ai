@@ -249,3 +249,28 @@ class OneFlowAIWithDB:
     def setup_provider_budget(self, provider: str, amount: float):
         """Setup provider budget."""
         self.budget.set_provider
+        _limit(provider, amount)
+    
+    def get_status(self) -> str:
+        """Get system status."""
+        lines = []
+        lines.append("=" * 60)
+        lines.append("OneFlow.AI Status | Статус OneFlow.AI")
+        lines.append("=" * 60)
+        lines.append(f"\nAPI Mode: {'Real' if self.use_real_api else 'Mock (Demo)'}")
+        lines.append(f"User: {self.user.username} (ID: {self.user.id})")
+        lines.append(f"Balance: {self.wallet.get_balance():.2f} credits")
+        lines.append(f"\nTotal Requests: {self.analytics.get_request_count()}")
+        lines.append(f"Total Cost: {self.analytics.get_total_cost():.2f} credits")
+        
+        if self.analytics.get_request_count() > 0:
+            lines.append(f"Average Cost: {self.analytics.get_average_cost_per_request():.2f} credits")
+            lines.append(f"Most Used Provider: {self.analytics.get_most_used_provider()}")
+        
+        lines.append("=" * 60)
+        return "\n".join(lines)
+
+
+def run():
+    """Helper function for compatibility."""
+    return "OneFlow with DB"
