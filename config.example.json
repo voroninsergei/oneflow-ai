@@ -1,4 +1,297 @@
 {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Multi-provider LLM configuration with routing, pricing, and fallback policies",
+  
+  "providers": [
+    {
+      "id": "openai-primary",
+      "type": "openai",
+      "model": "gpt-4-turbo",
+      "endpoint": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "timeouts": {
+        "connect_ms": 5000,
+        "read_ms": 60000,
+        "total_ms": 120000
+      },
+      "retries": {
+        "max_attempts": 3,
+        "backoff_multiplier": 2,
+        "initial_delay_ms": 1000,
+        "retry_on_status": [429, 500, 502, 503, 504]
+      },
+      "region_restrictions": {
+        "allowed_regions": ["us-east", "us-west", "eu-west"],
+        "prefer_region": "us-east"
+      },
+      "enabled": true,
+      "priority": 1,
+      "weight": 100
+    },
+    {
+      "id": "anthropic-primary",
+      "type": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "endpoint": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "timeouts": {
+        "connect_ms": 5000,
+        "read_ms": 90000,
+        "total_ms": 180000
+      },
+      "retries": {
+        "max_attempts": 3,
+        "backoff_multiplier": 2,
+        "initial_delay_ms": 1000,
+        "retry_on_status": [429, 500, 502, 503, 529]
+      },
+      "region_restrictions": {
+        "allowed_regions": ["us-east", "us-west", "eu-central"],
+        "prefer_region": "us-east"
+      },
+      "enabled": true,
+      "priority": 1,
+      "weight": 100
+    },
+    {
+      "id": "openai-fallback",
+      "type": "openai",
+      "model": "gpt-3.5-turbo",
+      "endpoint": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "timeouts": {
+        "connect_ms": 3000,
+        "read_ms": 30000,
+        "total_ms": 60000
+      },
+      "retries": {
+        "max_attempts": 2,
+        "backoff_multiplier": 1.5,
+        "initial_delay_ms": 500,
+        "retry_on_status": [429, 500, 502, 503]
+      },
+      "region_restrictions": {
+        "allowed_regions": ["us-east", "us-west", "eu-west", "ap-southeast"],
+        "prefer_region": "us-east"
+      },
+      "enabled": true,
+      "priority": 2,
+      "weight": 50,
+      "comment": "Используется как фоллбэк для быстрых и дешёвых запросов"
+    },
+    {
+      "id": "azure-openai",
+      "type": "azure",
+      "model": "gpt-4",
+      "endpoint": "https://{resource}.openai.azure.com",
+      "api_key_env": "AZURE_OPENAI_KEY",
+      "resource_env": "AZURE_OPENAI_RESOURCE",
+      "deployment_env": "AZURE_OPENAI_DEPLOYMENT",
+      "timeouts": {
+        "connect_ms": 5000,
+        "read_ms": 60000,
+        "total_ms": 120000
+      },
+      "retries": {
+        "max_attempts": 3,
+        "backoff_multiplier": 2,
+        "initial_delay_ms": 1000,
+        "retry_on_status": [429, 500, 502, 503]
+      },
+      "region_restrictions": {
+        "allowed_regions": ["eu-west", "eu-central"],
+        "prefer_region": "eu-west"
+      },
+      "enabled": false,
+      "priority": 3,
+      "weight": 75,
+      "comment": "Резервный провайдер для европейского региона"
+    }
+  ],
+
+  "pricing": {
+    "comment": "Цены указаны в USD. Обновляйте согласно актуальным прайс-листам провайдеров",
+    "models": {
+      "gpt-4-turbo": {
+        "input_token_cost": 0.00001,
+        "output_token_cost": 0.00003,
+        "image_input_cost": 0.00765,
+        "context_window": 128000
+      },
+      "gpt-3.5-turbo": {
+        "input_token_cost": 0.0000005,
+        "output_token_cost": 0.0000015,
+        "context_window": 16385
+      },
+      "claude-sonnet-4-5-20250929": {
+        "input_token_cost": 0.000003,
+        "output_token_cost": 0.000015,
+        "context_window": 200000,
+        "supports_vision": true
+      },
+      "gpt-4": {
+        "input_token_cost": 0.00003,
+        "output_token_cost": 0.00006,
+        "context_window": 8192
+      }
+    },
+    "compute": {
+      "minute_cost": 0.002,
+      "comment": "Стоимость вычислительного времени для собственной инфраструктуры"
+    }
+  },
+
+  "routing_policy": {
+    "comment": "Политика маршрутизации определяет приоритеты выбора провайдера",
+    "strategy": "adaptive",
+    "strategies_available": ["latency", "price", "quality", "adaptive", "round_robin"],
+    
+    "latency_routing": {
+      "enabled": true,
+      "max_latency_ms": 5000,
+      "track_p95": true,
+      "fallback_on_timeout": true,
+      "comment": "При превышении лимита задержки автоматически переключается на следующий провайдер"
+    },
+    
+    "price_routing": {
+      "enabled": true,
+      "prefer_cheaper": true,
+      "max_price_per_1k_tokens": 0.05,
+      "quality_threshold": 0.8,
+      "comment": "Выбирает самый дешёвый провайдер с приемлемым качеством"
+    },
+    
+    "quality_routing": {
+      "enabled": true,
+      "min_quality_score": 0.85,
+      "prefer_higher_context": true,
+      "comment": "Приоритизирует модели с лучшим качеством ответов"
+    },
+    
+    "adaptive_routing": {
+      "enabled": true,
+      "learning_rate": 0.1,
+      "success_weight": 0.4,
+      "latency_weight": 0.3,
+      "cost_weight": 0.3,
+      "comment": "Динамически балансирует между качеством, скоростью и ценой на основе истории"
+    },
+
+    "fallback_chain": [
+      "priority",
+      "availability",
+      "region",
+      "cost"
+    ],
+    "fallback_comment": "Порядок фоллбэков: 1) по приоритету провайдера, 2) по доступности, 3) по региону, 4) по стоимости"
+  },
+
+  "budgets": {
+    "global": {
+      "daily_limit_usd": 100.0,
+      "monthly_limit_usd": 2500.0,
+      "alert_threshold_percent": 80,
+      "hard_stop_on_limit": true
+    },
+    "per_user": {
+      "enabled": true,
+      "daily_limit_usd": 5.0,
+      "monthly_limit_usd": 100.0,
+      "alert_threshold_percent": 90
+    },
+    "per_provider": {
+      "openai-primary": {
+        "daily_limit_usd": 50.0,
+        "monthly_limit_usd": 1200.0
+      },
+      "anthropic-primary": {
+        "daily_limit_usd": 40.0,
+        "monthly_limit_usd": 1000.0
+      }
+    }
+  },
+
+  "rate_limits": {
+    "comment": "Лимиты запросов для предотвращения превышения квот провайдеров",
+    "global": {
+      "requests_per_minute": 500,
+      "tokens_per_minute": 150000,
+      "requests_per_day": 50000
+    },
+    "per_provider": {
+      "openai-primary": {
+        "requests_per_minute": 200,
+        "tokens_per_minute": 90000,
+        "requests_per_day": 20000
+      },
+      "anthropic-primary": {
+        "requests_per_minute": 150,
+        "tokens_per_minute": 80000,
+        "requests_per_day": 15000
+      },
+      "openai-fallback": {
+        "requests_per_minute": 300,
+        "tokens_per_minute": 100000,
+        "requests_per_day": 30000
+      }
+    },
+    "per_user": {
+      "enabled": true,
+      "requests_per_minute": 20,
+      "tokens_per_minute": 10000,
+      "requests_per_hour": 500
+    },
+    "burst_allowance": {
+      "enabled": true,
+      "multiplier": 1.5,
+      "duration_seconds": 60,
+      "comment": "Разрешает краткосрочные всплески нагрузки до 150% от лимита в течение минуты"
+    }
+  },
+
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "track_latency": true,
+      "track_costs": true,
+      "track_errors": true,
+      "track_token_usage": true
+    },
+    "alerting": {
+      "enabled": true,
+      "alert_on_budget_threshold": true,
+      "alert_on_error_rate": true,
+      "error_rate_threshold_percent": 5,
+      "webhook_url_env": "MONITORING_WEBHOOK_URL"
+    }
+  },
+
   "region": "us-east",
-  "pricing": {}
+  
+  "security": {
+    "api_keys_from_env": true,
+    "rotate_keys_days": 90,
+    "encrypt_logs": true,
+    "pii_filtering": {
+      "enabled": true,
+      "patterns": ["email", "phone", "ssn", "credit_card"]
+    }
+  },
+
+  "caching": {
+    "enabled": true,
+    "ttl_seconds": 3600,
+    "max_cache_size_mb": 1024,
+    "cache_similar_queries": true,
+    "similarity_threshold": 0.95
+  },
+
+  "_notes": {
+    "api_keys": "Все API-ключи загружаются из переменных окружения (ENV), никогда не храните их в конфигурации",
+    "fallback_priority": "Фоллбэк работает по цепочке: сначала провайдеры с priority=1, затем priority=2 и т.д. При равном приоритете учитывается weight",
+    "region_caps": "Если запрос приходит из региона, не указанного в allowed_regions провайдера, он автоматически исключается из выбора",
+    "cost_tracking": "Система автоматически считает стоимость на основе токенов и прайсинга, обновляйте цены регулярно",
+    "adaptive_learning": "При включённом adaptive_routing система учится на истории запросов и оптимизирует выбор провайдера"
+  }
 }
