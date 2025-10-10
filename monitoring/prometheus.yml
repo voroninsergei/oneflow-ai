@@ -1,2 +1,44 @@
-global: {scrape_interval: 15s}
-scrape_configs: []
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'oneflow-ai'
+    environment: 'production'
+
+# Alertmanager configuration (опционально)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # OneFlow.AI Application
+  - job_name: 'oneflow-api'
+    static_configs:
+      - targets: ['app:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # PostgreSQL Exporter (если установлен)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: []
+        # - postgres-exporter:9187
+
+  # Redis Exporter (если установлен)
+  - job_name: 'redis'
+    static_configs:
+      - targets: []
+        # - redis-exporter:9121
