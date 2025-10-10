@@ -1,9 +1,9 @@
 """
-OneFlow.AI CLI - Fixed Version
-CLI OneFlow.AI - Исправленная версия
+OneFlow.AI CLI - Complete Version
+CLI OneFlow.AI - Полная версия
 
-Working command-line interface with all documented commands.
-Рабочий интерфейс командной строки со всеми задокументированными командами.
+Complete command-line interface with all documented commands.
+Полный интерфейс командной строки со всеми задокументированными командами.
 """
 
 import argparse
@@ -71,9 +71,7 @@ def handle_analytics(args):
     
     if args.export:
         try:
-            from analytics import Analytics
-            analytics = Analytics()
-            data = analytics.export_to_dict()
+            data = system.analytics.export_to_dict()
             
             with open(args.export, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
