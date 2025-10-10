@@ -1,0 +1,113 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'oneflow-production'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - '/etc/prometheus/alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # ============================================================================
+  # ONEFLOW APPLICATION
+  # ============================================================================
+  - job_name: 'oneflow-api'
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - 'host.docker.internal:8000'  # FastAPI app
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'oneflow-api'
+
+  # ============================================================================
+  # PROMETHEUS SELF-MONITORING
+  # ============================================================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+          - 'localhost:9090'
+
+  # ============================================================================
+  # NODE EXPORTER - System Metrics
+  # ============================================================================
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets:
+          - 'node-exporter:9100'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'production-server'
+
+  # ============================================================================
+  # CADVISOR - Container Metrics
+  # ============================================================================
+  - job_name: 'cadvisor'
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'cadvisor:8080'
+
+  # ============================================================================
+  # OPENTELEMETRY COLLECTOR
+  # ============================================================================
+  - job_name: 'otel-collector'
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - 'otel-collector:8888'
+    metrics_path: '/metrics'
+
+  # ============================================================================
+  # JAEGER
+  # ============================================================================
+  - job_name: 'jaeger'
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - 'jaeger:14269'
+
+  # ============================================================================
+  # LOKI
+  # ============================================================================
+  - job_name: 'loki'
+    static_configs:
+      - targets:
+          - 'loki:3100'
+
+  # ============================================================================
+  # GRAFANA
+  # ============================================================================
+  - job_name: 'grafana'
+    static_configs:
+      - targets:
+          - 'grafana:3000'
+    metrics_path: '/metrics'
+
+  # ============================================================================
+  # ALERTMANAGER
+  # ============================================================================
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets:
+          - 'alertmanager:9093'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "https://prometheus-remote-write-endpoint.com/api/v1/write"
+#     basic_auth:
+#       username: "user"
+#       password: "password"
