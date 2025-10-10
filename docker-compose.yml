@@ -1,216 +1,43 @@
 version: '3.8'
 
 services:
-  # ============================================
-  # OneFlow.AI Application
-  # ============================================
   oneflow-ai:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: oneflow-ai:latest
+    build: .
     container_name: oneflow-ai
-    restart: unless-stopped
-    
-    # Порты
     ports:
-      - "${PORT:-8000}:8000"
-    
-    # Environment variables (базовые настройки)
+      - "8000:8000"
     environment:
-      # Server config
-      - HOST=0.0.0.0
-      - PORT=8000
-      - DEBUG=${DEBUG:-false}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      
-      # Database (PostgreSQL из сервиса ниже)
-      - DATABASE_URL=postgresql://${DB_USER:-oneflow}:${DB_PASSWORD:-oneflow_password}@postgres:5432/${DB_NAME:-oneflow}
-      
-      # Секреты через Docker Secrets (рекомендуется)
-      # Если используете Docker Secrets, раскомментируйте:
-      # - K8S_SECRET_PATH=/run/secrets
-      
-      # Или напрямую из .env файла (только для dev!)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - STABILITY_API_KEY=${STABILITY_API_KEY}
       - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
-      
-      # Security
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
-      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
-      
-      # Features
-      - ENABLE_ANALYTICS=${ENABLE_ANALYTICS:-true}
-      - ENABLE_BUDGET_ENFORCEMENT=${ENABLE_BUDGET_ENFORCEMENT:-true}
-      - ENABLE_RATE_LIMITING=${ENABLE_RATE_LIMITING:-true}
-    
-    # Docker Secrets (рекомендуется для production)
-    # Раскомментируйте для использования Docker Secrets:
-    # secrets:
-    #   - openai_key
-    #   - anthropic_key
-    #   - stability_key
-    #   - elevenlabs_key
-    #   - jwt_secret
-    
-    # Volumes
+      - DATABASE_URL=postgresql://oneflow:oneflow@postgres:5432/oneflow
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    
-    # Зависимости
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-    
-    # Healthcheck
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    
-    # Networks
-    networks:
-      - oneflow-network
-
-  # ============================================
-  # PostgreSQL Database
-  # ============================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: oneflow-postgres
     restart: unless-stopped
-    
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: oneflow-postgres
     environment:
-      - POSTGRES_USER=${DB_USER:-oneflow}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-oneflow_password}
-      - POSTGRES_DB=${DB_NAME:-oneflow}
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    
+      - POSTGRES_USER=oneflow
+      - POSTGRES_PASSWORD=oneflow
+      - POSTGRES_DB=oneflow
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    
     ports:
       - "5432:5432"
-    
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-oneflow}"]
+      test: ["CMD-SHELL", "pg_isready -U oneflow"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
-    networks:
-      - oneflow-network
-
-  # ============================================
-  # Redis Cache
-  # ============================================
-  redis:
-    image: redis:7-alpine
-    container_name: oneflow-redis
     restart: unless-stopped
-    
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
-    
-    volumes:
-      - redis_data:/data
-    
-    ports:
-      - "6379:6379"
-    
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    
-    networks:
-      - oneflow-network
 
-  # ============================================
-  # Nginx Reverse Proxy (опционально)
-  # ============================================
-  nginx:
-    image: nginx:alpine
-    container_name: oneflow-nginx
-    restart: unless-stopped
-    
-    ports:
-      - "80:80"
-      - "443:443"
-    
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/logs:/var/log/nginx
-    
-    depends_on:
-      - oneflow-ai
-    
-    networks:
-      - oneflow-network
-
-# ============================================
-# Docker Secrets (для production)
-# ============================================
-# Раскомментируйте для использования Docker Secrets
-# secrets:
-#   openai_key:
-#     external: true
-#   anthropic_key:
-#     external: true
-#   stability_key:
-#     external: true
-#   elevenlabs_key:
-#     external: true
-#   jwt_secret:
-#     external: true
-
-# ============================================
-# Volumes
-# ============================================
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-
-# ============================================
-# Networks
-# ============================================
-networks:
-  oneflow-network:
-    driver: bridge
-
-# ============================================
-# Использование:
-# ============================================
-# 
-# 1. Development (с .env файлом):
-#    docker-compose up -d
-# 
-# 2. Production (с Docker Secrets):
-#    # Создать секреты
-#    echo "sk-proj-..." | docker secret create openai_key -
-#    echo "sk-ant-..." | docker secret create anthropic_key -
-#    
-#    # Раскомментировать секции secrets выше
-#    docker-compose up -d
-# 
-# 3. Остановка:
-#    docker-compose down
-# 
-# 4. Просмотр логов:
-#    docker-compose logs -f oneflow-ai
-# 
-# 5. Rebuild:
-#    docker-compose up -d --build
-#
