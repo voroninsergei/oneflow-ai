@@ -472,7 +472,6 @@ class EnhancedStabilityProvider:
             data = response.json()
             
             # Cost calculation (Stability uses credits)
-            # Approximate: 1 credit ≈ $0.01, typical image costs 1-5 credits
             cost = 0.03  # Approximate cost per image
             
             return {
@@ -566,8 +565,6 @@ class EnhancedElevenLabsProvider:
             self.rate_limiter.add_request()
             
             # Cost calculation (based on character count)
-            # Free tier: 10,000 chars/month
-            # Paid: ~$0.30 per 1,000 characters
             character_count = len(text)
             cost = (character_count / 1000) * 0.30
             
