@@ -1,198 +1,92 @@
 version: '3.8'
 
 services:
-  # ===== OneFlow.AI Application =====
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: oneflow-ai-app
-    ports:
-      - "${APP_PORT:-8000}:8000"
-    env_file:
-      - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - oneflow-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    volumes:
-      - app_logs:/app/logs
-      - app_data:/app/data
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
-  # ===== PostgreSQL Database =====
-  postgres:
-    image: postgres:16-alpine
-    container_name: oneflow-postgres
-    env_file:
-      - .env.postgres
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backups:/backups
-    networks:
-      - oneflow-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oneflow} -d ${POSTGRES_DB:-oneflow}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    profiles:
-      - full
-      - db
-
-  # ===== Redis Cache =====
-  redis:
-    image: redis:7-alpine
-    container_name: oneflow-redis
-    env_file:
-      - .env.redis
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    command: >
-      sh -c "redis-server
-      --appendonly yes
-      --requirepass $${REDIS_PASSWORD:-redis_password}
-      --maxmemory 512mb
-      --maxmemory-policy allkeys-lru"
-    volumes:
-      - redis_data:/data
-    networks:
-      - oneflow-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis_password}", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
-  # ===== Prometheus (Metrics) =====
+  # ============================================================================
+  # PROMETHEUS - Metrics Collection
+  # ============================================================================
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.47.0
     container_name: oneflow-prometheus
+    user: root
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/slo_alerts.yml:/etc/prometheus/slo_alerts.yml:ro
+      - ./prometheus/operational_alerts.yml:/etc/prometheus/operational_alerts.yml:ro
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    networks:
-      - oneflow-network
+      - '--web.enable-admin-api'
     restart: unless-stopped
+    networks:
+      - monitoring
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
-    depends_on:
-      app:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.2'
-          memory: 256M
-    profiles:
-      - full
-      - monitoring
 
-  # ===== Grafana (Dashboards) =====
+  # ============================================================================
+  # GRAFANA - Visualization
+  # ============================================================================
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:10.1.5
     container_name: oneflow-grafana
+    user: root
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
-    env_file:
-      - .env.grafana
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-clock-panel
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_LOG_LEVEL=info
     volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
-    networks:
-      - oneflow-network
+    depends_on:
+      - prometheus
+      - loki
     restart: unless-stopped
+    networks:
+      - monitoring
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
-    depends_on:
-      prometheus:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    profiles:
-      - full
-      - monitoring
 
-  # ===== Jaeger (Distributed Tracing) =====
+  # ============================================================================
+  # JAEGER - Distributed Tracing
+  # ============================================================================
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:1.50
     container_name: oneflow-jaeger
     ports:
-      - "${JAEGER_UDP_5775:-5775}:5775/udp"
-      - "${JAEGER_UDP_6831:-6831}:6831/udp"
-      - "${JAEGER_UDP_6832:-6832}:6832/udp"
-      - "${JAEGER_HTTP_5778:-5778}:5778"
-      - "${JAEGER_UI_PORT:-16686}:16686"
-      - "${JAEGER_HTTP_14268:-14268}:14268"
-      - "${JAEGER_GRPC_14250:-14250}:14250"
-      - "${JAEGER_ZIPKIN_9411:-9411}:9411"
+      - "5775:5775/udp"     # Zipkin compact
+      - "6831:6831/udp"     # Compact thrift
+      - "6832:6832/udp"     # Binary thrift
+      - "5778:5778"         # Serve configs
+      - "16686:16686"       # UI
+      - "14268:14268"       # Jaeger collector HTTP
+      - "14250:14250"       # gRPC
+      - "9411:9411"         # Zipkin compatible
+      - "4317:4317"         # OTLP gRPC
+      - "4318:4318"         # OTLP HTTP
     environment:
+      - COLLECTOR_OTLP_ENABLED=true
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
       - SPAN_STORAGE_TYPE=badger
       - BADGER_EPHEMERAL=false
@@ -200,85 +94,176 @@ services:
       - BADGER_DIRECTORY_KEY=/badger/key
     volumes:
       - jaeger_data:/badger
-    networks:
-      - oneflow-network
     restart: unless-stopped
+    networks:
+      - monitoring
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:14269/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.2'
-          memory: 256M
-    profiles:
-      - full
-      - tracing
 
-  # ===== pgAdmin (Database Management) - опционально =====
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: oneflow-pgadmin
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    env_file:
-      - .env.pgadmin
+  # ============================================================================
+  # OPENTELEMETRY COLLECTOR
+  # ============================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.88.0
+    container_name: oneflow-otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - oneflow-network
-    restart: unless-stopped
+      - ./otel/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics exposed by the collector
+      - "8889:8889"   # Prometheus exporter metrics
+      - "13133:13133" # Health check
+      - "55679:55679" # zPages
     depends_on:
-      postgres:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    profiles:
-      - full
-      - db
+      - jaeger
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:13133/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-volumes:
-  postgres_data:
-    driver: local
-    name: oneflow_postgres_data
-  redis_data:
-    driver: local
-    name: oneflow_redis_data
-  prometheus_data:
-    driver: local
-    name: oneflow_prometheus_data
-  grafana_data:
-    driver: local
-    name: oneflow_grafana_data
-  jaeger_data:
-    driver: local
-    name: oneflow_jaeger_data
-  pgadmin_data:
-    driver: local
-    name: oneflow_pgadmin_data
-  app_logs:
-    driver: local
-    name: oneflow_app_logs
-  app_data:
-    driver: local
-    name: oneflow_app_data
+  # ============================================================================
+  # LOKI - Log Aggregation
+  # ============================================================================
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: oneflow-loki
+    user: root
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # PROMTAIL - Log Shipper
+  # ============================================================================
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: oneflow-promtail
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - ../logs:/var/lib/oneflow/logs:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # ALERTMANAGER - Alert Management
+  # ============================================================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: oneflow-alertmanager
+    user: root
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # NODE EXPORTER - System Metrics
+  # ============================================================================
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: oneflow-node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.netclass.ignored-devices=^(veth.*|br.*|docker.*|lo)$$'
+      - '--collector.netdev.device-exclude=^(veth.*|br.*|docker.*|lo)$$'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # CADVISOR - Container Metrics
+  # ============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: oneflow-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    networks:
+      - monitoring
+    command:
+      - '--housekeeping_interval=30s'
+      - '--docker_only=true'
+      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
 
 networks:
-  oneflow-network:
+  monitoring:
+    name: oneflow-monitoring
     driver: bridge
-    name: oneflow_network
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
+
+volumes:
+  prometheus_data:
+    name: oneflow-prometheus-data
+  grafana_data:
+    name: oneflow-grafana-data
+  jaeger_data:
+    name: oneflow-jaeger-data
+  loki_data:
+    name: oneflow-loki-data
+  alertmanager_data:
+    name: oneflow-alertmanager-data
