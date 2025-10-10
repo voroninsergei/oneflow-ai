@@ -1,0 +1,150 @@
+# ============================================
+# requirements/base.txt
+# Core dependencies for all installations
+# ============================================
+pytest>=7.0.0
+
+
+# ============================================
+# requirements/api.txt
+# Real API provider integrations
+# ============================================
+-r base.txt
+
+openai>=1.0.0
+anthropic>=0.5.0
+requests>=2.31.0
+pillow>=10.0.0
+
+
+# ============================================
+# requirements/web.txt
+# Web server dependencies
+# ============================================
+-r base.txt
+
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+aiofiles>=23.0.0
+
+
+# ============================================
+# requirements/db.txt
+# Database dependencies
+# ============================================
+-r base.txt
+
+sqlalchemy>=2.0.0
+
+
+# ============================================
+# requirements/postgres.txt
+# PostgreSQL specific
+# ============================================
+-r db.txt
+
+psycopg2-binary>=2.9.9
+
+
+# ============================================
+# requirements/auth.txt
+# Authentication & Security
+# ============================================
+-r base.txt
+
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+PyJWT>=2.8.0
+
+
+# ============================================
+# requirements/cache.txt
+# Caching with Redis
+# ============================================
+-r base.txt
+
+redis>=5.0.0
+
+
+# ============================================
+# requirements/tasks.txt
+# Task queue with Celery
+# ============================================
+-r base.txt
+
+celery>=5.3.0
+
+
+# ============================================
+# requirements/dev.txt
+# Development tools
+# ============================================
+-r base.txt
+-r api.txt
+-r web.txt
+-r db.txt
+-r auth.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.12.0
+
+# Code quality
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.6.0
+isort>=5.12.0
+ruff>=0.1.0
+bandit>=1.7.5
+
+# Pre-commit hooks
+pre-commit>=3.5.0
+
+# Type stubs
+types-requests>=2.31.0
+
+
+# ============================================
+# requirements/docs.txt
+# Documentation generation
+# ============================================
+-r base.txt
+
+mkdocs>=1.5.0
+mkdocs-material>=9.4.0
+mkdocstrings[python]>=0.24.0
+
+
+# ============================================
+# requirements/prod.txt
+# Production deployment
+# ============================================
+-r base.txt
+-r api.txt
+-r web.txt
+-r postgres.txt
+-r auth.txt
+-r cache.txt
+
+# Production server
+gunicorn>=21.2.0
+
+# Monitoring
+prometheus-client>=0.19.0
+
+# Logging
+python-json-logger>=2.0.7
+
+
+# ============================================
+# requirements.txt (simplified)
+# Legacy compatibility - use pyproject.toml
+# ============================================
+-r requirements/base.txt
+
+# For full installation: pip install -e ".[all]"
+# For specific features: pip install -e ".[api,web,db]"
