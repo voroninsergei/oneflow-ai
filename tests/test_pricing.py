@@ -1,32 +1,47 @@
 """
-Unit tests for the PricingCalculator class in OneFlow.AI.
+Test module for the PricingCalculator class in OneFlow.AI.
 
 English:
-This test module verifies the basic functionality of the PricingCalculator class, including registering rates and estimating cost in tokens.
+This module contains unit tests for the PricingCalculator class, verifying registration of rates and cost estimation across multiple providers.
 
 Русская версия:
-Данный модуль тестирует функциональность класса PricingCalculator, включая регистрацию тарифов и оценку стоимости в токенах.
+Этот модуль содержит юниттесты для класса PricingCalculator: проверяет регистрацию тарифов и расчет стоимости для нескольких провайдеров.
 """
 
 import os
 import sys
 import pytest
 
-# Adjust the path so that src modules can be imported when running tests directly
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Ensure that src modules can be imported when running tests directly
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from pricing import PricingCalculator
 
 
-def test_pricing_register_and_estimate():
-    """Test registering rates and estimating costs."""
-    pricing = PricingCalculator()
-    # Register rates: 0.5 token per word for GPT and 10 tokens per image
-    pricing.register_rate("gpt", 0.5)
-    pricing.register_rate("image", 10)
-    # GPT cost: 5 words -> 2.5 tokens
-    assert pricing.estimate_cost("gpt", 5) == pytest.approx(2.5)
-    # Image cost: 2 images -> 20 tokens
-    assert pricing.estimate_cost("image", 2) == 20
-    # Unknown model should return 0 cost
-    assert pricing.estimate_cost("unknown", 1) == 0
+def test_register_and_estimate_multiple_providers():
+    """English: Test registering rates for multiple providers and estimating cost.
+
+    Русская версия:
+    Тест регистрации тарифов для нескольких провайдеров и расчёта стоимости.
+    """
+    pc = PricingCalculator()
+    # Register two providers: GPT (cost per word) and image (cost per image)
+    pc.register_rate("gpt", 0.05)
+    pc.register_rate("image", 10)
+
+    # Test cost estimation for GPT: 100 words -> 100 * 0.05 = 5.0
+    assert pc.estimate_cost("gpt", 100) == pytest.approx(5.0)
+    # Test cost estimation for image provider: 3 images -> 3 * 10 = 30
+    assert pc.estimate_cost("image", 3) == pytest.approx(30.0)
+
+
+def test_unknown_provider_returns_none():
+    """English: Ensure that requesting cost for an unregistered provider returns None.
+
+    Русская версия:
+    Убедитесь, что запрос стоимости для незарегистрированного провайдера возвращает None.
+    """
+    pc = PricingCalculator()
+    pc.register_rate("gpt", 0.05)
+    # Request cost for a provider that has not been registered
+    assert pc.estimate_cost("unknown", 50) is None
