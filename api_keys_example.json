@@ -1,7 +1,0 @@
-{
-  "openai": "sk-your-openai-api-key-here",
-  "anthropic": "sk-ant-your-anthropic-api-key-here",
-  "stability": "sk-your-stability-api-key-here",
-  "elevenlabs": "your-elevenlabs-api-key-here",
-  "runway": "your-runway-api-key-here"
-}
