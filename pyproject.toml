@@ -1,0 +1,241 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oneflow-ai"
+version = "2.0.0"
+description = "AI Model Aggregator with pricing, routing, analytics & authentication"
+readme = "README.md"
+license = {text = "Proprietary"}
+authors = [
+    {name = "Sergey Voronin", email = "voroninsergeiai@gmail.com"}
+]
+maintainers = [
+    {name = "Sergey Voronin", email = "voroninsergeiai@gmail.com"}
+]
+keywords = ["ai", "llm", "api", "aggregator", "openai", "anthropic", "routing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.10"
+
+# Core dependencies - always installed
+dependencies = [
+    "pytest>=7.0.0",
+]
+
+[project.optional-dependencies]
+# API Providers - for real API integration
+api = [
+    "openai>=1.0.0",
+    "anthropic>=0.5.0",
+    "requests>=2.31.0",
+    "pillow>=10.0.0",
+]
+
+# Web Server - FastAPI for REST API
+web = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+]
+
+# Database - SQLAlchemy for persistence
+db = [
+    "sqlalchemy>=2.0.0",
+]
+
+# PostgreSQL support
+postgres = [
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.9",
+]
+
+# Authentication & Security
+auth = [
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "PyJWT>=2.8.0",
+]
+
+# Caching
+cache = [
+    "redis>=5.0.0",
+]
+
+# Task Queue
+tasks = [
+    "celery>=5.3.0",
+]
+
+# Development tools
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "flake8>=6.1.0",
+    "mypy>=1.6.0",
+    "isort>=5.12.0",
+    "pre-commit>=3.5.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.4.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+# All features combined
+all = [
+    "oneflow-ai[api,web,db,postgres,auth,cache,tasks,dev,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/voroninsergeiai/oneflow-ai"
+Documentation = "https://github.com/voroninsergeiai/oneflow-ai#readme"
+Repository = "https://github.com/voroninsergeiai/oneflow-ai"
+Issues = "https://github.com/voroninsergeiai/oneflow-ai/issues"
+
+[project.scripts]
+oneflow = "oneflow.cli:main"
+
+[tool.setuptools]
+packages = ["oneflow"]
+package-dir = {"oneflow" = "src"}
+
+[tool.setuptools.package-data]
+oneflow = ["py.typed"]
+
+# Black - Code Formatter
+[tool.black]
+line-length = 120
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# isort - Import Sorter
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+# pytest - Testing
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+# mypy - Type Checking
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "anthropic.*",
+    "openai.*",
+    "uvicorn.*",
+]
+ignore_missing_imports = true
+
+# Ruff - Fast Python Linter
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # unused imports
+
+# Bandit - Security Linter
+[tool.bandit]
+exclude_dirs = ["tests", "test_*.py"]
+tests = ["B201", "B301"]
+skips = ["B101", "B601"]
