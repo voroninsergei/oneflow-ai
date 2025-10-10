@@ -1,16 +1,110 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: oneflow
+  name: oneflow-ai
+  namespace: oneflow-ai
+  labels:
+    app: oneflow-ai
+  annotations:
+    # Ingress class
+    kubernetes.io/ingress.class: "nginx"  # или "traefik", "alb" и т.д.
+    
+    # SSL/TLS
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    nginx.ingress.kubernetes.io/limit-connections: "20"
+    
+    # Request Size
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    
+    # Timeouts
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    
+    # Headers
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "16k"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+    
+    # CORS (если нужно на уровне Ingress)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://yourdomain.com,https://app.yourdomain.com"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    
+    # WebSocket support
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/websocket-services: "oneflow-ai"
+    
+    # Backend Protocol
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    
+    # Affinity
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "oneflow-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "86400"
+
 spec:
+  ingressClassName: nginx
+  
+  tls:
+  - hosts:
+    - api.yourdomain.com
+    - yourdomain.com
+    secretName: oneflow-ai-tls
+  
   rules:
-    - host: oneflow.local
-      http:
-        paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: oneflow
-              port:
-                number: 80
+  - host: api.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: oneflow-ai
+            port:
+              number: 8000
+  
+  - host: yourdomain.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: oneflow-ai
+            port:
+              number: 8000
+
+---
+# Ingress для локальной разработки (dev)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: oneflow-ai-local
+  namespace: oneflow-ai
+  labels:
+    app: oneflow-ai
+    environment: development
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: oneflow.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: oneflow-ai
+            port:
+              number: 8000
