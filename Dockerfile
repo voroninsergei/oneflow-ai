@@ -67,6 +67,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     ca-certificates \
+    tini \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -98,13 +99,18 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
+# Use tini as init system to handle signals properly
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
 # Default command with production-ready settings
 CMD ["uvicorn", "web_server:app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \
      "--workers", "4", \
      "--log-level", "info", \
-     "--no-access-log"]
+     "--no-access-log", \
+     "--proxy-headers", \
+     "--forwarded-allow-ips", "*"]
 
 # ============================================================================
 # Build & Run Instructions:
@@ -125,6 +131,10 @@ CMD ["uvicorn", "web_server:app", \
 #     --restart unless-stopped \
 #     --memory="2g" \
 #     --cpus="2" \
+#     --read-only \
+#     --tmpfs /tmp \
+#     --tmpfs /app/logs \
+#     --security-opt no-new-privileges:true \
 #     oneflow-ai:latest
 #
 # Run with docker-compose:
@@ -136,4 +146,8 @@ CMD ["uvicorn", "web_server:app", \
 # Build for multiple platforms:
 #   docker buildx build --platform linux/amd64,linux/arm64 \
 #     -t ghcr.io/voroninsergei/oneflow-ai:latest --push .
+#
+# Scan for vulnerabilities:
+#   docker scout cve oneflow-ai:latest
+#   trivy image oneflow-ai:latest
 # ============================================================================
