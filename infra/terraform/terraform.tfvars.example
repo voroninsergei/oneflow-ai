@@ -1,0 +1,39 @@
+# ============================================
+# Terraform Variables Example
+# Скопируйте в terraform.tfvars и заполните
+# ============================================
+
+# Basic Configuration
+aws_region   = "us-east-1"
+environment  = "prod"
+project_name = "oneflow-ai"
+
+# API Keys (NEVER commit these values!)
+openai_api_key     = "YOUR_OPENAI_API_KEY"
+anthropic_api_key  = "YOUR_ANTHROPIC_API_KEY"
+stability_api_key  = "YOUR_STABILITY_API_KEY"  # optional
+elevenlabs_api_key = "YOUR_ELEVENLABS_API_KEY" # optional
+
+# Secrets Manager Settings
+secret_recovery_window_days = 7
+
+# IAM Settings
+iam_trusted_services = [
+  "ec2.amazonaws.com",
+  "ecs-tasks.amazonaws.com"
+]
+
+# KMS Settings
+enable_kms_encryption   = true
+kms_deletion_window_days = 7
+enable_kms_key_rotation = true
+
+# CloudWatch Settings
+enable_audit_logging = true
+log_retention_days   = 30
+
+# Additional Tags
+additional_tags = {
+  Owner = "DevOps Team"
+  CostCenter = "Engineering"
+}
