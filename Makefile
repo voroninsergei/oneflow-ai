@@ -4,7 +4,18 @@
 .PHONY: help test test-unit test-e2e test-integration test-all test-coverage test-fast test-slow test-providers test-budget test-routing clean install-dev
 
 help:
-	@echo "OneFlow.AI Test Commands:"
+	@echo "OneFlow.AI Commands:"
+	@echo ""
+	@echo "Dependencies:"
+	@echo "  make install           - Install production dependencies"
+	@echo "  make install-dev       - Install development dependencies"
+	@echo "  make compile-deps      - Compile .in files to .txt"
+	@echo "  make update-deps       - Update dependencies to latest versions"
+	@echo "  make sync-deps         - Sync production environment"
+	@echo "  make sync-dev          - Sync development environment"
+	@echo "  make clean-deps        - Clean compiled dependency files"
+	@echo ""
+	@echo "Testing:"
 	@echo "  make test              - Run all tests with default settings"
 	@echo "  make test-unit         - Run only unit tests (fast)"
 	@echo "  make test-e2e          - Run only end-to-end tests"
@@ -18,7 +29,48 @@ help:
 	@echo "  make test-all          - Run all tests with verbose output"
 	@echo "  make test-watch        - Run tests in watch mode"
 	@echo "  make clean             - Clean test artifacts"
-	@echo "  make install-dev       - Install development dependencies"
+
+# ============================================
+# Dependency Management (pip-tools)
+# ============================================
+
+# Install pip-tools
+install-pip-tools:
+	pip install pip-tools
+
+# Compile dependencies (create lock files)
+compile-deps: install-pip-tools
+	pip-compile requirements.in -o requirements.txt --resolver=backtracking
+	pip-compile requirements-dev.in -o requirements-dev.txt --resolver=backtracking
+
+# Update dependencies to latest versions
+update-deps: install-pip-tools
+	pip-compile --upgrade requirements.in -o requirements.txt --resolver=backtracking
+	pip-compile --upgrade requirements-dev.in -o requirements-dev.txt --resolver=backtracking
+
+# Sync environment with production dependencies
+sync-deps: install-pip-tools
+	pip-sync requirements.txt
+
+# Sync environment with dev dependencies
+sync-dev: install-pip-tools
+	pip-sync requirements-dev.txt
+
+# Install production dependencies
+install: compile-deps
+	pip install -r requirements.txt
+
+# Install development dependencies
+install-dev: compile-deps
+	pip install -r requirements-dev.txt
+
+# Clean compiled dependency files
+clean-deps:
+	rm -f requirements.txt requirements-dev.txt
+
+# ============================================
+# Testing Commands
+# ============================================
 
 # Default test command (matches pytest.ini settings)
 test:
@@ -108,11 +160,7 @@ clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
 
-# Install development dependencies
-install-dev:
-	pip install -r requirements-dev.txt
-
-# Install test dependencies
+# Install test dependencies (legacy, use install-dev instead)
 install-test:
 	pip install pytest pytest-cov pytest-mock pytest-asyncio
 	pip install responses respx httpx
