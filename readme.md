@@ -34,7 +34,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 - ✅ Интеграция с OpenAI, Anthropic, Stability AI, ElevenLabs
 - ✅ Circuit breaker и retry логика
 - ✅ Базовая аутентификация (JWT, API keys)
-- ✅ Health и readiness проbes
+- ✅ Health и readiness probes
 - ✅ Prometheus metrics endpoint
 - ✅ Docker и docker-compose конфигурация
 - ✅ Базовое покрытие тестами (~80%)
@@ -200,8 +200,86 @@ REDIS_URL=redis://localhost:6379/0
 # Проверить, что ключи загружены
 python -c "import os; print('OpenAI:', 'OK' if os.getenv('OPENAI_API_KEY') else 'MISSING')"
 python -c "import os; print('Anthropic:', 'OK' if os.getenv('ANTHROPIC_API_KEY') else 'MISSING')"
+```
 
-# Или через приложение
+---
+
+## ⚙️ Provider Configuration
+
+### Схема конфигурации
+
+Конфигурация провайдеров, ценообразования и маршрутизации описана в JSON Schema:
+
+```bash
+config/
+├── config.schema.json    # JSON Schema с валидацией
+├── config.json          # Рабочая конфигурация
+├── config.example.json  # Пример конфигурации
+└── README.md           # Документация по конфигурации
+```
+
+См. **[config/README.md](config/README.md)** для полной документации по конфигурации провайдеров.
+
+### Основные параметры
+
+```json
+{
+  "providers": [
+    {
+      "id": "openai-primary",
+      "type": "openai",
+      "model": "gpt-4-turbo",
+      "priority": 1,
+      "weight": 100,
+      "timeouts": {
+        "connect_ms": 5000,
+        "read_ms": 60000,
+        "total_ms": 120000
+      }
+    }
+  ],
+  "pricing": {
+    "version": "2025-01-15",
+    "models": {
+      "gpt-4-turbo": {
+        "input_token_cost": 0.00001,
+        "output_token_cost": 0.00003,
+        "context_window": 128000
+      }
+    }
+  },
+  "routing_policy": {
+    "strategy": "adaptive"
+  }
+}
+```
+
+### Валидация конфигурации
+
+```bash
+# Валидация против схемы
+ajv validate -s config/config.schema.json -d config/config.json
+
+# Проверка consistency
+python scripts/validate_config.py
+
+# Проверка environment variables
+./scripts/check_env.sh config/config.json
+```
+
+### Единицы измерения
+
+- **Время**: миллисекунды (ms) для таймаутов, секунды для TTL
+- **Стоимость**: USD, токены **per-token** (не per 1000)
+- **Rate limits**: абсолютные значения за период (per_minute, per_hour, per_day)
+- **Проценты**: 0-100 для порогов
+- **Скоры**: 0.0-1.0 для качества и похожести
+
+Подробнее см. [config/README.md](config/README.md).
+
+---
+
+## 💻 Локальная разработка
 
 ### Локальная разработка
 
@@ -466,6 +544,7 @@ TOTAL                          1247    247    80%
 
 ## 📚 Документация
 
+- **[config/README.md](config/README.md)** - Документация по конфигурации провайдеров
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Полное руководство по развёртыванию
 - **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Чеклист перед релизом
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Сводка изменений
@@ -586,6 +665,8 @@ total_usd = $0.075
 credits = 0.075 * 100 = 7.5 credits
 ```
 
+Подробная конфигурация ценообразования находится в `config/config.json`. См. [config/README.md](config/README.md).
+
 ---
 
 ## 📈 Performance & Observability
@@ -661,6 +742,13 @@ make db-migrate       # Применить миграции (alembic upgrade hea
 make db-rollback      # Откатить миграцию
 make db-reset         # Сброс БД (ОПАСНО! Удаляет все данные)
 make db-shell         # PostgreSQL shell (psql)
+```
+
+### Configuration
+
+```bash
+make config-validate  # Валидация config.json против схемы
+make config-check-env # Проверка environment variables
 ```
 
 ### Monitoring
@@ -828,11 +916,25 @@ DATABASE_MAX_OVERFLOW=10
 # Проверить метрики ошибок провайдера
 curl http://localhost:8000/metrics | grep provider_errors
 
-# Увеличить failure threshold
-CIRCUIT_BREAKER_FAILURE_THRESHOLD=10
+# Увеличить failure threshold в config/config.json
+{
+  "retries": {
+    "max_attempts": 5
+  }
+}
+```
 
-# Увеличить timeout window
-CIRCUIT_BREAKER_TIMEOUT=120
+### Проблема: Неправильная конфигурация провайдеров
+
+```bash
+# Валидация конфигурации
+make config-validate
+
+# Проверка environment variables
+make config-check-env
+
+# Просмотр актуальной конфигурации
+cat config/config.json
 ```
 
 ---
@@ -841,6 +943,7 @@ CIRCUIT_BREAKER_TIMEOUT=120
 
 ### Документация
 
+- 📖 [Provider Configuration](config/README.md)
 - 📖 [Deployment Guide](DEPLOYMENT.md)
 - ✅ [Production Checklist](PRODUCTION_CHECKLIST.md)
 - 📝 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
