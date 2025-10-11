@@ -122,7 +122,7 @@ jobs:
         safety check --json || true
     
     - name: Upload security reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: security-reports
         path: |
@@ -151,7 +151,7 @@ jobs:
         pytest --cov=src --cov-report=html --cov-report=term-missing --cov-branch
     
     - name: Upload coverage HTML report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: htmlcov/
