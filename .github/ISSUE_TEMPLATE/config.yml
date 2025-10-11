@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/oneflow-ai/oneflow-ai/discussions
+    about: Ask questions and discuss with the community
+  - name: 📖 Documentation
+    url: https://docs.oneflow.ai
+    about: Check our documentation for guides and API reference
+  - name: 💡 Ideas & Feedback
+    url: https://github.com/oneflow-ai/oneflow-ai/discussions/categories/ideas
+    about: Share your ideas and feedback with the community
