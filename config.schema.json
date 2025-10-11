@@ -1,0 +1,996 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/schemas/llm-config.schema.json",
+  "title": "Multi-Provider LLM Configuration Schema",
+  "description": "Comprehensive schema for multi-provider LLM routing with pricing, budgets, rate limits, and monitoring",
+  "version": "1.0.0",
+  "type": "object",
+  "required": ["providers", "pricing", "routing_policy", "region"],
+  
+  "properties": {
+    "providers": {
+      "type": "array",
+      "description": "List of LLM provider configurations",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/Provider"
+      }
+    },
+    
+    "pricing": {
+      "$ref": "#/definitions/Pricing"
+    },
+    
+    "routing_policy": {
+      "$ref": "#/definitions/RoutingPolicy"
+    },
+    
+    "budgets": {
+      "$ref": "#/definitions/Budgets"
+    },
+    
+    "rate_limits": {
+      "$ref": "#/definitions/RateLimits"
+    },
+    
+    "monitoring": {
+      "$ref": "#/definitions/Monitoring"
+    },
+    
+    "region": {
+      "type": "string",
+      "description": "Primary region for the deployment",
+      "enum": ["us-east", "us-west", "us-central", "eu-west", "eu-central", "eu-north", "ap-southeast", "ap-northeast", "ap-south"]
+    },
+    
+    "security": {
+      "$ref": "#/definitions/Security"
+    },
+    
+    "caching": {
+      "$ref": "#/definitions/Caching"
+    },
+    
+    "_notes": {
+      "type": "object",
+      "description": "Optional notes and documentation",
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  
+  "definitions": {
+    "Provider": {
+      "type": "object",
+      "description": "Individual LLM provider configuration",
+      "required": ["id", "type", "model", "endpoint", "enabled", "priority"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this provider instance",
+          "pattern": "^[a-z0-9-]+$",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        
+        "type": {
+          "type": "string",
+          "description": "Provider type",
+          "enum": ["openai", "anthropic", "azure", "google", "cohere", "huggingface", "local"]
+        },
+        
+        "model": {
+          "type": "string",
+          "description": "Model identifier (must exist in pricing.models)",
+          "minLength": 1
+        },
+        
+        "endpoint": {
+          "type": "string",
+          "description": "API endpoint URL",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        
+        "api_key_env": {
+          "type": "string",
+          "description": "Environment variable name containing the API key",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        
+        "resource_env": {
+          "type": "string",
+          "description": "Environment variable for Azure resource name",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        
+        "deployment_env": {
+          "type": "string",
+          "description": "Environment variable for Azure deployment name",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        },
+        
+        "timeouts": {
+          "$ref": "#/definitions/Timeouts"
+        },
+        
+        "retries": {
+          "$ref": "#/definitions/Retries"
+        },
+        
+        "region_restrictions": {
+          "$ref": "#/definitions/RegionRestrictions"
+        },
+        
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this provider is active"
+        },
+        
+        "priority": {
+          "type": "integer",
+          "description": "Provider priority (1 = highest, lower number = higher priority)",
+          "minimum": 1,
+          "maximum": 100
+        },
+        
+        "weight": {
+          "type": "integer",
+          "description": "Weight for load balancing among same-priority providers (higher = more traffic)",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 100
+        },
+        
+        "comment": {
+          "type": "string",
+          "description": "Optional comment about this provider"
+        }
+      }
+    },
+    
+    "Timeouts": {
+      "type": "object",
+      "description": "Timeout configuration in milliseconds",
+      "required": ["connect_ms", "read_ms", "total_ms"],
+      "properties": {
+        "connect_ms": {
+          "type": "integer",
+          "description": "Connection timeout in milliseconds",
+          "minimum": 100,
+          "maximum": 60000,
+          "default": 5000
+        },
+        
+        "read_ms": {
+          "type": "integer",
+          "description": "Read timeout in milliseconds",
+          "minimum": 1000,
+          "maximum": 600000,
+          "default": 60000
+        },
+        
+        "total_ms": {
+          "type": "integer",
+          "description": "Total request timeout in milliseconds",
+          "minimum": 1000,
+          "maximum": 600000,
+          "default": 120000
+        }
+      }
+    },
+    
+    "Retries": {
+      "type": "object",
+      "description": "Retry policy configuration",
+      "required": ["max_attempts", "backoff_multiplier", "initial_delay_ms"],
+      "properties": {
+        "max_attempts": {
+          "type": "integer",
+          "description": "Maximum number of retry attempts",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        
+        "backoff_multiplier": {
+          "type": "number",
+          "description": "Exponential backoff multiplier",
+          "minimum": 1.0,
+          "maximum": 10.0,
+          "default": 2.0
+        },
+        
+        "initial_delay_ms": {
+          "type": "integer",
+          "description": "Initial retry delay in milliseconds",
+          "minimum": 100,
+          "maximum": 30000,
+          "default": 1000
+        },
+        
+        "retry_on_status": {
+          "type": "array",
+          "description": "HTTP status codes that trigger retries",
+          "items": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "uniqueItems": true,
+          "default": [429, 500, 502, 503, 504]
+        }
+      }
+    },
+    
+    "RegionRestrictions": {
+      "type": "object",
+      "description": "Geographic region restrictions",
+      "properties": {
+        "allowed_regions": {
+          "type": "array",
+          "description": "Regions where this provider can be used",
+          "items": {
+            "type": "string",
+            "enum": ["us-east", "us-west", "us-central", "eu-west", "eu-central", "eu-north", "ap-southeast", "ap-northeast", "ap-south"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        
+        "prefer_region": {
+          "type": "string",
+          "description": "Preferred region for this provider",
+          "enum": ["us-east", "us-west", "us-central", "eu-west", "eu-central", "eu-north", "ap-southeast", "ap-northeast", "ap-south"]
+        }
+      }
+    },
+    
+    "Pricing": {
+      "type": "object",
+      "description": "Pricing configuration for all models and compute resources. All costs in USD.",
+      "required": ["models"],
+      "properties": {
+        "comment": {
+          "type": "string",
+          "description": "Notes about pricing version and update policy"
+        },
+        
+        "version": {
+          "type": "string",
+          "description": "Pricing version identifier (e.g., 2025-01-15)",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        
+        "models": {
+          "type": "object",
+          "description": "Per-model pricing information",
+          "patternProperties": {
+            "^[a-z0-9-\\.]+$": {
+              "$ref": "#/definitions/ModelPricing"
+            }
+          },
+          "minProperties": 1
+        },
+        
+        "compute": {
+          "$ref": "#/definitions/ComputePricing"
+        }
+      }
+    },
+    
+    "ModelPricing": {
+      "type": "object",
+      "description": "Pricing for a specific model. All token costs in USD per token.",
+      "required": ["input_token_cost", "output_token_cost", "context_window"],
+      "properties": {
+        "input_token_cost": {
+          "type": "number",
+          "description": "Cost per input token in USD (e.g., 0.00001 = $0.01 per 1000 tokens)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        
+        "output_token_cost": {
+          "type": "number",
+          "description": "Cost per output token in USD (e.g., 0.00003 = $0.03 per 1000 tokens)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        
+        "image_input_cost": {
+          "type": "number",
+          "description": "Cost per image input in USD",
+          "minimum": 0,
+          "maximum": 10
+        },
+        
+        "context_window": {
+          "type": "integer",
+          "description": "Maximum context window size in tokens",
+          "minimum": 1024,
+          "maximum": 1000000
+        },
+        
+        "supports_vision": {
+          "type": "boolean",
+          "description": "Whether the model supports image inputs",
+          "default": false
+        },
+        
+        "supports_function_calling": {
+          "type": "boolean",
+          "description": "Whether the model supports function calling",
+          "default": false
+        }
+      }
+    },
+    
+    "ComputePricing": {
+      "type": "object",
+      "description": "Infrastructure compute costs",
+      "properties": {
+        "minute_cost": {
+          "type": "number",
+          "description": "Cost per minute of compute time in USD",
+          "minimum": 0,
+          "maximum": 10
+        },
+        
+        "hour_cost": {
+          "type": "number",
+          "description": "Cost per hour of compute time in USD",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        
+        "comment": {
+          "type": "string",
+          "description": "Notes about compute pricing"
+        }
+      }
+    },
+    
+    "RoutingPolicy": {
+      "type": "object",
+      "description": "Policy for routing requests to providers",
+      "required": ["strategy"],
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        
+        "strategy": {
+          "type": "string",
+          "description": "Primary routing strategy",
+          "enum": ["latency", "price", "quality", "adaptive", "round_robin", "random", "priority_only"]
+        },
+        
+        "strategies_available": {
+          "type": "array",
+          "description": "List of available strategies (informational)",
+          "items": {
+            "type": "string"
+          }
+        },
+        
+        "latency_routing": {
+          "$ref": "#/definitions/LatencyRouting"
+        },
+        
+        "price_routing": {
+          "$ref": "#/definitions/PriceRouting"
+        },
+        
+        "quality_routing": {
+          "$ref": "#/definitions/QualityRouting"
+        },
+        
+        "adaptive_routing": {
+          "$ref": "#/definitions/AdaptiveRouting"
+        },
+        
+        "fallback_chain": {
+          "type": "array",
+          "description": "Order of fallback criteria",
+          "items": {
+            "type": "string",
+            "enum": ["priority", "availability", "region", "cost", "latency", "quality"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        
+        "fallback_comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "LatencyRouting": {
+      "type": "object",
+      "description": "Latency-based routing configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        
+        "max_latency_ms": {
+          "type": "integer",
+          "description": "Maximum acceptable latency in milliseconds",
+          "minimum": 100,
+          "maximum": 60000,
+          "default": 5000
+        },
+        
+        "track_p95": {
+          "type": "boolean",
+          "description": "Track 95th percentile latency",
+          "default": true
+        },
+        
+        "fallback_on_timeout": {
+          "type": "boolean",
+          "description": "Automatically fallback if timeout exceeded",
+          "default": true
+        },
+        
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "PriceRouting": {
+      "type": "object",
+      "description": "Price-based routing configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "prefer_cheaper": {
+          "type": "boolean",
+          "description": "Prefer cheaper providers",
+          "default": true
+        },
+        
+        "max_price_per_1k_tokens": {
+          "type": "number",
+          "description": "Maximum acceptable price per 1000 tokens in USD",
+          "minimum": 0,
+          "maximum": 10
+        },
+        
+        "quality_threshold": {
+          "type": "number",
+          "description": "Minimum quality score (0-1) when optimizing for price",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.8
+        },
+        
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "QualityRouting": {
+      "type": "object",
+      "description": "Quality-based routing configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "min_quality_score": {
+          "type": "number",
+          "description": "Minimum quality score (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.85
+        },
+        
+        "prefer_higher_context": {
+          "type": "boolean",
+          "description": "Prefer models with larger context windows",
+          "default": true
+        },
+        
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "AdaptiveRouting": {
+      "type": "object",
+      "description": "Adaptive learning-based routing configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "learning_rate": {
+          "type": "number",
+          "description": "Learning rate for adaptive algorithm (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.1
+        },
+        
+        "success_weight": {
+          "type": "number",
+          "description": "Weight for success rate in scoring (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.4
+        },
+        
+        "latency_weight": {
+          "type": "number",
+          "description": "Weight for latency in scoring (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3
+        },
+        
+        "cost_weight": {
+          "type": "number",
+          "description": "Weight for cost in scoring (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3
+        },
+        
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "Budgets": {
+      "type": "object",
+      "description": "Budget limits and alerts. All amounts in USD.",
+      "properties": {
+        "global": {
+          "$ref": "#/definitions/GlobalBudget"
+        },
+        
+        "per_user": {
+          "$ref": "#/definitions/PerUserBudget"
+        },
+        
+        "per_provider": {
+          "type": "object",
+          "description": "Budget limits per provider",
+          "patternProperties": {
+            "^[a-z0-9-]+$": {
+              "$ref": "#/definitions/ProviderBudget"
+            }
+          }
+        }
+      }
+    },
+    
+    "GlobalBudget": {
+      "type": "object",
+      "description": "Global budget limits in USD",
+      "properties": {
+        "daily_limit_usd": {
+          "type": "number",
+          "description": "Daily spending limit in USD",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        
+        "monthly_limit_usd": {
+          "type": "number",
+          "description": "Monthly spending limit in USD",
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        
+        "alert_threshold_percent": {
+          "type": "integer",
+          "description": "Percentage of limit that triggers alert",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 80
+        },
+        
+        "hard_stop_on_limit": {
+          "type": "boolean",
+          "description": "Stop all requests when limit reached",
+          "default": true
+        }
+      }
+    },
+    
+    "PerUserBudget": {
+      "type": "object",
+      "description": "Per-user budget limits in USD",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "daily_limit_usd": {
+          "type": "number",
+          "description": "Daily spending limit per user in USD",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        
+        "monthly_limit_usd": {
+          "type": "number",
+          "description": "Monthly spending limit per user in USD",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        
+        "alert_threshold_percent": {
+          "type": "integer",
+          "description": "Percentage of limit that triggers alert",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 90
+        }
+      }
+    },
+    
+    "ProviderBudget": {
+      "type": "object",
+      "description": "Budget limits for a specific provider in USD",
+      "properties": {
+        "daily_limit_usd": {
+          "type": "number",
+          "description": "Daily spending limit for this provider in USD",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        
+        "monthly_limit_usd": {
+          "type": "number",
+          "description": "Monthly spending limit for this provider in USD",
+          "minimum": 0,
+          "maximum": 10000000
+        }
+      }
+    },
+    
+    "RateLimits": {
+      "type": "object",
+      "description": "Rate limiting configuration to prevent quota exhaustion",
+      "properties": {
+        "comment": {
+          "type": "string"
+        },
+        
+        "global": {
+          "$ref": "#/definitions/GlobalRateLimit"
+        },
+        
+        "per_provider": {
+          "type": "object",
+          "description": "Rate limits per provider",
+          "patternProperties": {
+            "^[a-z0-9-]+$": {
+              "$ref": "#/definitions/ProviderRateLimit"
+            }
+          }
+        },
+        
+        "per_user": {
+          "$ref": "#/definitions/PerUserRateLimit"
+        },
+        
+        "burst_allowance": {
+          "$ref": "#/definitions/BurstAllowance"
+        }
+      }
+    },
+    
+    "GlobalRateLimit": {
+      "type": "object",
+      "description": "Global rate limits across all providers",
+      "properties": {
+        "requests_per_minute": {
+          "type": "integer",
+          "description": "Maximum requests per minute globally",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        
+        "tokens_per_minute": {
+          "type": "integer",
+          "description": "Maximum tokens per minute globally",
+          "minimum": 1000,
+          "maximum": 10000000
+        },
+        
+        "requests_per_day": {
+          "type": "integer",
+          "description": "Maximum requests per day globally",
+          "minimum": 1,
+          "maximum": 10000000
+        }
+      }
+    },
+    
+    "ProviderRateLimit": {
+      "type": "object",
+      "description": "Rate limits for a specific provider",
+      "properties": {
+        "requests_per_minute": {
+          "type": "integer",
+          "description": "Maximum requests per minute for this provider",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        
+        "tokens_per_minute": {
+          "type": "integer",
+          "description": "Maximum tokens per minute for this provider",
+          "minimum": 1000,
+          "maximum": 10000000
+        },
+        
+        "requests_per_day": {
+          "type": "integer",
+          "description": "Maximum requests per day for this provider",
+          "minimum": 1,
+          "maximum": 10000000
+        }
+      }
+    },
+    
+    "PerUserRateLimit": {
+      "type": "object",
+      "description": "Rate limits per user",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "requests_per_minute": {
+          "type": "integer",
+          "description": "Maximum requests per minute per user",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        
+        "tokens_per_minute": {
+          "type": "integer",
+          "description": "Maximum tokens per minute per user",
+          "minimum": 100,
+          "maximum": 1000000
+        },
+        
+        "requests_per_hour": {
+          "type": "integer",
+          "description": "Maximum requests per hour per user",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      }
+    },
+    
+    "BurstAllowance": {
+      "type": "object",
+      "description": "Burst allowance for short-term traffic spikes",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "multiplier": {
+          "type": "number",
+          "description": "Multiplier for burst limit (e.g., 1.5 = 150% of normal limit)",
+          "minimum": 1.0,
+          "maximum": 10.0,
+          "default": 1.5
+        },
+        
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Duration of burst window in seconds",
+          "minimum": 1,
+          "maximum": 300,
+          "default": 60
+        },
+        
+        "comment": {
+          "type": "string"
+        }
+      }
+    },
+    
+    "Monitoring": {
+      "type": "object",
+      "description": "Monitoring and observability configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        
+        "metrics": {
+          "$ref": "#/definitions/MetricsConfig"
+        },
+        
+        "alerting": {
+          "$ref": "#/definitions/AlertingConfig"
+        }
+      }
+    },
+    
+    "MetricsConfig": {
+      "type": "object",
+      "description": "Metrics collection configuration",
+      "properties": {
+        "track_latency": {
+          "type": "boolean",
+          "description": "Track request latency metrics",
+          "default": true
+        },
+        
+        "track_costs": {
+          "type": "boolean",
+          "description": "Track cost metrics",
+          "default": true
+        },
+        
+        "track_errors": {
+          "type": "boolean",
+          "description": "Track error rates and types",
+          "default": true
+        },
+        
+        "track_token_usage": {
+          "type": "boolean",
+          "description": "Track token usage metrics",
+          "default": true
+        }
+      }
+    },
+    
+    "AlertingConfig": {
+      "type": "object",
+      "description": "Alerting configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        
+        "alert_on_budget_threshold": {
+          "type": "boolean",
+          "description": "Send alerts when budget threshold reached",
+          "default": true
+        },
+        
+        "alert_on_error_rate": {
+          "type": "boolean",
+          "description": "Send alerts when error rate exceeds threshold",
+          "default": true
+        },
+        
+        "error_rate_threshold_percent": {
+          "type": "number",
+          "description": "Error rate percentage that triggers alert",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 5
+        },
+        
+        "webhook_url_env": {
+          "type": "string",
+          "description": "Environment variable containing webhook URL for alerts",
+          "pattern": "^[A-Z_][A-Z0-9_]*$"
+        }
+      }
+    },
+    
+    "Security": {
+      "type": "object",
+      "description": "Security and compliance settings",
+      "properties": {
+        "api_keys_from_env": {
+          "type": "boolean",
+          "description": "Load API keys from environment variables only",
+          "default": true
+        },
+        
+        "rotate_keys_days": {
+          "type": "integer",
+          "description": "Recommended key rotation period in days",
+          "minimum": 1,
+          "maximum": 365,
+          "default": 90
+        },
+        
+        "encrypt_logs": {
+          "type": "boolean",
+          "description": "Encrypt logs at rest",
+          "default": true
+        },
+        
+        "pii_filtering": {
+          "$ref": "#/definitions/PIIFiltering"
+        }
+      }
+    },
+    
+    "PIIFiltering": {
+      "type": "object",
+      "description": "PII filtering configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "patterns": {
+          "type": "array",
+          "description": "Types of PII to filter",
+          "items": {
+            "type": "string",
+            "enum": ["email", "phone", "ssn", "credit_card", "ip_address", "name", "address"]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    
+    "Caching": {
+      "type": "object",
+      "description": "Response caching configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        
+        "ttl_seconds": {
+          "type": "integer",
+          "description": "Cache time-to-live in seconds",
+          "minimum": 60,
+          "maximum": 86400,
+          "default": 3600
+        },
+        
+        "max_cache_size_mb": {
+          "type": "integer",
+          "description": "Maximum cache size in megabytes",
+          "minimum": 1,
+          "maximum": 10240,
+          "default": 1024
+        },
+        
+        "cache_similar_queries": {
+          "type": "boolean",
+          "description": "Cache similar queries based on similarity threshold",
+          "default": false
+        },
+        
+        "similarity_threshold": {
+          "type": "number",
+          "description": "Similarity threshold for query matching (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.95
+        }
+      }
+    }
+  }
+}
