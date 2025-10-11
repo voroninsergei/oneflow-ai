@@ -1,0 +1,227 @@
+name: Scheduled Security Scans
+
+on:
+  schedule:
+    # Run every day at 3:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-security-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-security-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety pip-audit
+          pip install -r requirements.txt || true
+          pip install -r requirements-dev.txt || true
+      
+      - name: Run Safety check
+        id: safety
+        run: |
+          safety check --json > safety-report.json || true
+          safety check
+        continue-on-error: true
+      
+      - name: Run pip-audit
+        id: pip_audit
+        run: |
+          pip-audit --desc --format json > pip-audit-report.json || true
+          pip-audit --desc
+        continue-on-error: true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-security-reports-${{ github.run_number }}
+          path: |
+            safety-report.json
+            pip-audit-report.json
+          retention-days: 90
+      
+      - name: Create issue for vulnerabilities
+        if: steps.safety.outcome == 'failure' || steps.pip_audit.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🔒 Security Alert: Vulnerabilities Detected (${new Date().toISOString().split('T')[0]})`;
+            const body = `## Security Scan Results
+            
+            Automated security scan has detected potential vulnerabilities in dependencies.
+            
+            **Scan Date:** ${new Date().toISOString()}
+            **Workflow Run:** ${{ github.run_id }}
+            
+            ### Actions Required:
+            1. Review the security reports in the workflow artifacts
+            2. Update vulnerable dependencies
+            3. Test the updates
+            4. Close this issue once resolved
+            
+            ### Reports:
+            - Safety Check: ${{ steps.safety.outcome }}
+            - pip-audit: ${{ steps.pip_audit.outcome }}
+            
+            [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            // Check if similar issue exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'security,automated'
+            });
+            
+            const existingIssue = issues.data.find(issue => 
+              issue.title.includes('Security Alert: Vulnerabilities Detected')
+            );
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['security', 'automated', 'high-priority']
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `### New Scan Results\n\n${body}`
+              });
+            }
+
+  trivy-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build Docker image for scanning
+        run: |
+          docker build -t oneflow-ai:scan .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'oneflow-ai:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Run Trivy for JSON report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'oneflow-ai:scan'
+          format: 'json'
+          output: 'trivy-report.json'
+      
+      - name: Upload Trivy reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-reports-${{ github.run_number }}
+          path: |
+            trivy-results.sarif
+            trivy-report.json
+          retention-days: 90
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-licenses
+          pip install -r requirements.txt || true
+      
+      - name: Check licenses
+        run: |
+          pip-licenses --format=json --with-urls --with-description > licenses.json
+          pip-licenses --format=markdown --with-urls > licenses.md
+          pip-licenses
+      
+      - name: Upload license reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-reports-${{ github.run_number }}
+          path: |
+            licenses.json
+            licenses.md
+          retention-days: 90
+      
+      - name: Check for problematic licenses
+        run: |
+          # Check for GPL and other restrictive licenses
+          if pip-licenses | grep -iE "(GPL|AGPL|LGPL)"; then
+            echo "⚠️ Warning: Restrictive licenses detected"
+            pip-licenses | grep -iE "(GPL|AGPL|LGPL)"
+          else
+            echo "✅ No restrictive licenses detected"
+          fi
+
+  summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, trivy-scan, license-check]
+    if: always()
+    
+    steps:
+      - name: Generate security summary
+        run: |
+          echo "## 🔒 Daily Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Scan Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Scan | ${{ needs.trivy-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| License Check | ${{ needs.license-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Review artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
