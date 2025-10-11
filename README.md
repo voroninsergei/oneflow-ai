@@ -1,6 +1,6 @@
 # OneFlow.AI v0.1.0 – Beta Preview 🚧
 
-> **Note:** This project is currently in **beta**.  While many of the building blocks for a production–grade system are in place, we are still collecting real‑world telemetry and iterating on the architecture.  Please treat it as a preview rather than a finished, battle‑hardened product.
+> **Note:** This project is currently in **beta**. While many of the building blocks for a production-grade system are in place, we are still collecting real-world telemetry and iterating on the architecture. Please treat it as a preview rather than a finished, battle-hardened product.
 
 > Enterprise-grade AI Model Aggregator с маршрутизацией, ценообразованием, аналитикой и полной observability
 
@@ -14,14 +14,15 @@
 
 ## 🎯 Что это?
 
-OneFlow.AI — это **ценовой и маршрутизирующий слой** для AI‑моделей.  Он предоставляет общую точку входа к нескольким провайдерам искусственного интеллекта, оценивает стоимость запроса по числу токенов, выбирает наиболее подходящую модель и обеспечивает мониторинг и безопасность.  Проект находится на стадии **beta**, поэтому некоторые функции и показатели ещё будут меняться.
+OneFlow.AI — это **ценовой и маршрутизирующий слой** для AI-моделей. Он предоставляет общую точку входа к нескольким провайдерам искусственного интеллекта, оценивает стоимость запроса по числу токенов, выбирает наиболее подходящую модель и обеспечивает мониторинг и безопасность.
 
+**Ключевые возможности:**
 - 🔀 **Автоматически выбирает** оптимальную модель (цена/скорость/качество)
 - 💰 **Прозрачное ценообразование** на основе токенов с нормализацией к кредитам
-- 🔄 **Умные fallback** при недоступности провайдеров (в стадии тестирования)
+- 🔄 **Умные fallback** при недоступности провайдеров
 - 📊 **Детальная аналитика** использования и затрат
 - 🔐 **Enterprise security** с JWT, API keys rotation, CORS
-- 📈 **Observability** с Prometheus, Grafana, OpenTelemetry (в разработке)
+- 📈 **Observability** с Prometheus, Grafana, OpenTelemetry
 
 ---
 
@@ -34,7 +35,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 - ✅ Интеграция с OpenAI, Anthropic, Stability AI, ElevenLabs
 - ✅ Circuit breaker и retry логика
 - ✅ Базовая аутентификация (JWT, API keys)
-- ✅ Health и readiness проbes
+- ✅ Health и readiness probes
 - ✅ Prometheus metrics endpoint
 - ✅ Docker и docker-compose конфигурация
 - ✅ Базовое покрытие тестами (~80%)
@@ -72,7 +73,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 | **Stability AI** | Stable Diffusion XL, SD3 | Image | 🚧 Testing |
 | **ElevenLabs** | Multilingual v2 | Audio | 🚧 Testing |
 
-### 💎 Production-Ready Features
+### 💎 Реализованные возможности
 
 ✅ **Observability**
 - Prometheus metrics на `/metrics`
@@ -85,11 +86,11 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 - Retry логика с jitter
 - Timeouts (connect: 10s, read: 30s)
 - Идемпотентность запросов
-- Quotas per‑user/per‑provider/per‑project (🚧 в тестировании)
+- Quotas per-user/per-provider/per-project (🚧 в тестировании)
 
 ✅ **Security**
 - JWT authentication + refresh tokens
-- API keys с автоматической ротацией (🚧 grace period testing)
+- API keys с автоматической ротацией (🚧 тестируется grace period)
 - Security headers (HSTS, CSP, X-Frame-Options)
 - Request size limits (10MB)
 - Secrets sanitization в логах
@@ -101,17 +102,19 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 - Quality-optimized: лучшее качество
 - Balanced: оптимальный баланс
 
-✅ **Token‑Based Billing**
+✅ **Token-Based Billing**
 - Точный расчёт входящих и исходящих токенов для каждого запроса
 - Нормализация стоимости к кредитам (по умолчанию 1 USD = 100 кредитов)
 - Поддержка нескольких провайдеров и моделей
-- Property‑based тесты (Hypothesis)
+- Property-based тесты (Hypothesis)
 
-> Стоимость запроса вычисляется в модуле `pricing_v2.py`.  Этот модуль оперирует токенами (не словами) и учитывает различную стоимость входящих и исходящих токенов для каждого провайдера.  Подробнее см. [src/pricing_v2.py](src/pricing_v2.py).
+> Стоимость запроса вычисляется в модуле `pricing_v2.py`. Этот модуль оперирует токенами (не словами) и учитывает различную стоимость входящих и исходящих токенов для каждого провайдера. Подробнее см. [src/pricing_v2.py](src/pricing_v2.py).
 
 ---
 
 ## 🚀 Быстрый старт
+
+> 📖 **Детальная документация по развёртыванию:** См. [DEPLOYMENT.md](DEPLOYMENT.md) для полного руководства по установке и настройке во всех окружениях.
 
 ### Предварительные требования
 
@@ -120,7 +123,7 @@ OneFlow.AI — это **ценовой и маршрутизирующий сл�
 - PostgreSQL 14+ (или используйте docker-compose)
 - Redis 7+ (или используйте docker-compose)
 
-### Установка
+### Локальная разработка
 
 ```bash
 # 1. Клонирование репозитория
@@ -133,55 +136,24 @@ source venv/bin/activate  # На Windows: venv\Scripts\activate
 
 # 3. Установка зависимостей
 pip install -r requirements.txt
-
-# Для разработки:
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt  # Для разработки
 
 # 4. Конфигурация
 cp .env.example .env
 nano .env  # Добавить API ключи провайдеров
-```
 
-### Локальная разработка
-
-```bash
-# Запуск всех сервисов (PostgreSQL, Redis, Prometheus, Grafana)
+# 5. Запуск зависимостей
 docker-compose up -d postgres redis
 
-# Применение миграций
+# 6. Применение миграций
 alembic upgrade head
 
-# Запуск development сервера
+# 7. Запуск development сервера
 uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+# Или: make dev
 
-# Или через Makefile:
-make dev
-
-# Открыть API документацию
+# 8. Открыть API документацию
 open http://localhost:8000/docs
-```
-
-### Доступные эндпоинты
-
-```bash
-# Health check
-curl http://localhost:8000/health
-
-# Readiness probe
-curl http://localhost:8000/ready
-
-# Prometheus metrics
-curl http://localhost:8000/metrics
-
-# API v1 endpoints
-curl http://localhost:8000/api/v1/estimate  # POST
-curl http://localhost:8000/api/v1/request   # POST
-
-# Swagger UI
-http://localhost:8000/docs
-
-# ReDoc
-http://localhost:8000/redoc
 ```
 
 ### Docker развёртывание
@@ -189,9 +161,7 @@ http://localhost:8000/redoc
 ```bash
 # Сборка образа
 docker build -t oneflow-ai:0.1.0 .
-
-# Или через Makefile:
-make docker-build
+# Или: make docker-build
 
 # Запуск полного stack
 docker-compose up -d
@@ -205,7 +175,7 @@ open http://localhost:8000/metrics
 
 ### Kubernetes развёртывание (Experimental)
 
-> **Warning:** Kubernetes конфигурация находится в экспериментальной стадии. Перед production использованием требуется дополнительная настройка StatefulSets, PVC, и ingress.
+> **Warning:** Kubernetes конфигурация находится в экспериментальной стадии. Перед использованием требуется дополнительная настройка StatefulSets, PVC, и ingress. См. [DEPLOYMENT.md](DEPLOYMENT.md) для деталей.
 
 ```bash
 # Создание namespace
@@ -227,6 +197,27 @@ kubectl get pods -n oneflow-ai
 
 # Port forward для локального тестирования
 kubectl port-forward -n oneflow-ai service/oneflow-ai 8000:8000
+```
+
+### Доступные эндпоинты
+
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Readiness probe
+curl http://localhost:8000/ready
+
+# Prometheus metrics
+curl http://localhost:8000/metrics
+
+# API v1 endpoints
+curl http://localhost:8000/api/v1/estimate  # POST
+curl http://localhost:8000/api/v1/request   # POST
+
+# Documentation
+http://localhost:8000/docs    # Swagger UI
+http://localhost:8000/redoc   # ReDoc
 ```
 
 ---
@@ -300,6 +291,8 @@ curl -X POST http://localhost:8000/api/v1/request \
 ---
 
 ## 📊 Мониторинг
+
+> 📖 **Полная документация по мониторингу:** См. [DEPLOYMENT.md](DEPLOYMENT.md) раздел "Monitoring & Observability"
 
 ### Метрики (Prometheus)
 
@@ -405,6 +398,7 @@ TOTAL                          1247    247    80%
 
 ## 📚 Документация
 
+- **[QUICKSTART.md](QUICKSTART.md)** - Быстрое начало работы (если есть)
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** - Полное руководство по развёртыванию
 - **[PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md)** - Чеклист перед релизом
 - **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Сводка изменений
@@ -529,29 +523,31 @@ credits = 0.075 * 100 = 7.5 credits
 
 ## 📈 Performance & Observability
 
-### SLI/SLO Targets (Beta Goals)
+### Целевые показатели (Beta Goals)
 
-Во время бета‑фазы мы собираем реальные метрики и формируем целевые уровни обслуживания (SLO).  Таблица ниже отражает **ожидаемые** цели, а не фактические показатели production окружения.
+Во время бета-фазы мы собираем реальные метрики для формирования целевых уровней обслуживания (SLO). Таблица ниже отражает **предварительные цели**, которые будут уточняться по мере накопления статистики.
 
-| Метрика | Цель (Beta) | Статус | Комментарий |
-|---------|-------------|--------|-------------|
-| **Доступность** | ≥ 95% | 🚧 Measuring | Повышается за счёт fallback‑ов; цель уточняется по мере накопления данных |
-| **Latency p95** | < 2s | 🚧 Measuring | Время ответа для 95% запросов; зависит от провайдера |
-| **Latency p99** | < 5s | 🚧 Measuring | Время ответа для 99% запросов |
-| **Ошибка 5xx** | < 1% | 🚧 Measuring | Доля запросов, завершившихся ошибкой сервера |
-| **Throughput** | 100-500 req/s | 🚧 Tuning | Для single‑node; масштабирование возможно через horizontal scaling |
+| Метрика | Целевое значение | Текущий статус | Комментарий |
+|---------|------------------|----------------|-------------|
+| **Доступность** | ≥ 95% | 🚧 Измеряется | Улучшается за счёт fallback-механизмов |
+| **Latency p95** | < 2s | 🚧 Измеряется | Зависит от выбранного провайдера |
+| **Latency p99** | < 5s | 🚧 Измеряется | Время ответа для 99% запросов |
+| **Ошибка 5xx** | < 1% | 🚧 Измеряется | Доля серверных ошибок |
+| **Throughput** | 100-500 req/s | 🚧 Настраивается | Single-node; масштабируется горизонтально |
 
-> **Note:** Эти цели будут уточнены после накопления статистики в production-like окружении. Фактическая производительность сильно зависит от инфраструктуры и нагрузки.
+> **Note:** Эти цели будут уточнены после накопления статистики. Фактическая производительность сильно зависит от инфраструктуры, нагрузки и выбранных провайдеров. **Рекомендуется проводить собственные нагрузочные тесты** в целевом окружении.
 
-### Наблюдаемость
-
-Проект интегрирован с Prometheus для сбора метрик. Grafana dashboards и OpenTelemetry трассировка находятся в стадии активной разработки.  В каталоге `monitoring/` можно найти примеры конфигураций.  
-
-**Рекомендуется проводить собственные нагрузочные тесты** в целевом окружении (например, с помощью k6, Locust, или Apache Bench), поскольку результаты сильно зависят от инфраструктуры.
+### Нагрузочное тестирование
 
 ```bash
 # Пример нагрузочного теста с k6
 k6 run --vus 10 --duration 30s tests/load/scenario.js
+
+# С помощью Apache Bench
+ab -n 1000 -c 10 http://localhost:8000/health
+
+# С помощью Locust
+locust -f tests/load/locustfile.py --host=http://localhost:8000
 ```
 
 ---
@@ -623,92 +619,6 @@ make prod-build       # Сборка production образа
 
 ---
 
-## 🌍 Окружения
-
-### Development
-
-```bash
-ENVIRONMENT=development
-LOG_LEVEL=DEBUG
-DATABASE_URL=postgresql://oneflow:password@localhost:5432/oneflow_dev
-REDIS_URL=redis://localhost:6379/0
-ENABLE_METRICS=true
-ENABLE_TRACING=false
-```
-
-### Staging
-
-```bash
-ENVIRONMENT=staging
-LOG_LEVEL=INFO
-DATABASE_URL=postgresql://oneflow:password@staging-db:5432/oneflow_staging
-REDIS_URL=redis://staging-redis:6379/0
-ENABLE_TRACING=true
-ENABLE_METRICS=true
-```
-
-### Production
-
-```bash
-ENVIRONMENT=production
-LOG_LEVEL=WARNING
-DATABASE_URL=postgresql://oneflow:secure_password@prod-db:5432/oneflow_prod
-REDIS_URL=redis://prod-redis:6379/0
-ENABLE_METRICS=true
-ENABLE_TRACING=true
-DATABASE_POOL_SIZE=30
-DATABASE_MAX_OVERFLOW=10
-```
-
----
-
-## 🔄 CI/CD Pipeline (Planned)
-
-### GitHub Actions (Coming Soon)
-
-```yaml
-name: CI/CD
-
-on: [push, pull_request]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-      - name: Run tests
-        run: make test-coverage
-      - name: Security check
-        run: make security-check
-  
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Build Docker image
-        run: make docker-build
-      - name: Push to registry
-        run: docker push oneflow-ai:${{ github.sha }}
-  
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Deploy to K8s
-        run: kubectl set image deployment/oneflow-ai oneflow-ai=oneflow-ai:${{ github.sha }}
-```
-
----
-
 ## 🐛 Troubleshooting
 
 ### Проблема: API не отвечает
@@ -767,35 +677,12 @@ DATABASE_MAX_OVERFLOW=10
 # Проверить метрики ошибок провайдера
 curl http://localhost:8000/metrics | grep provider_errors
 
-# Увеличить failure threshold
+# Увеличить failure threshold в .env
 CIRCUIT_BREAKER_FAILURE_THRESHOLD=10
 
 # Увеличить timeout window
 CIRCUIT_BREAKER_TIMEOUT=120
 ```
-
----
-
-## 📞 Поддержка
-
-### Документация
-
-- 📖 [Deployment Guide](DEPLOYMENT.md)
-- ✅ [Production Checklist](PRODUCTION_CHECKLIST.md)
-- 📝 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
-- 🔧 [API Reference](http://localhost:8000/docs)
-
-### Контакты
-
-- **Email**: voroninsergeiai@gmail.com
-- **GitHub**: [@voroninsergei](https://github.com/voroninsergei)
-- **Issues**: [GitHub Issues](https://github.com/voroninsergei/oneflow-ai/issues)
-
-### Коммьюнити
-
-- 💬 Задать вопрос: [Discussions](https://github.com/voroninsergei/oneflow-ai/discussions)
-- 🐛 Сообщить о баге: [Issues](https://github.com/voroninsergei/oneflow-ai/issues)
-- 🎉 Предложить feature: [Feature Requests](https://github.com/voroninsergei/oneflow-ai/discussions/categories/ideas)
 
 ---
 
@@ -833,6 +720,29 @@ make prod-check
 
 ---
 
+## 📞 Поддержка
+
+### Документация
+
+- 📖 [Deployment Guide](DEPLOYMENT.md)
+- ✅ [Production Checklist](PRODUCTION_CHECKLIST.md)
+- 📝 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+- 🔧 [API Reference](http://localhost:8000/docs)
+
+### Контакты
+
+- **Email**: voroninsergeiai@gmail.com
+- **GitHub**: [@voroninsergei](https://github.com/voroninsergei)
+- **Issues**: [GitHub Issues](https://github.com/voroninsergei/oneflow-ai/issues)
+
+### Коммьюнити
+
+- 💬 Задать вопрос: [Discussions](https://github.com/voroninsergei/oneflow-ai/discussions)
+- 🐛 Сообщить о баге: [Issues](https://github.com/voroninsergei/oneflow-ai/issues)
+- 🎉 Предложить feature: [Feature Requests](https://github.com/voroninsergei/oneflow-ai/discussions/categories/ideas)
+
+---
+
 ## 📜 License
 
 Proprietary License - Copyright (c) 2025 Sergey Voronin. All rights reserved.
@@ -866,7 +776,7 @@ See [LICENSE](LICENSE) file for details.
 ├─────────────────────────────────────────┤
 │  👀 Observability:       🚧 In Progress  │
 │  🔧 Reliability:         ✅ Core Ready    │
-│  🔒 Security:            ✅ First‑class   │
+│  🔒 Security:            ✅ Implemented   │
 │  🚀 Performance:         🚧 Tuning       │
 │  🏗️ Infrastructure:      ✅ Docker Ready  │
 │  ☸️  Kubernetes:         🚧 Experimental │
