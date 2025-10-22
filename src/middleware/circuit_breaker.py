@@ -16,6 +16,7 @@ from tenacity import (
     before_sleep_log
 )
 import httpx
+import logging
 
 logger = structlog.get_logger()
 
