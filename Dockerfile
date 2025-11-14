@@ -19,8 +19,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy only requirements first for optimal layer caching
-COPY requirements.txt .
+# Copy project files for installing dependencies
+COPY pyproject.toml .
+COPY README.md .
+COPY src/ ./src/
 
 # Create virtual environment and install dependencies
 RUN python -m venv /opt/venv
@@ -28,7 +30,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install dependencies with optimizations
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir ".[production]" && \
     find /opt/venv -type d -name '__pycache__' -exec rm -rf {} + && \
     find /opt/venv -type f -name '*.pyc' -delete && \
     find /opt/venv -type f -name '*.pyo' -delete
@@ -83,10 +85,8 @@ COPY --from=builder --chown=oneflow:oneflow /opt/venv /opt/venv
 # Set working directory
 WORKDIR /app
 
-# Copy application code in optimal order (least to most frequently changed)
+# Copy application code
 COPY --chown=oneflow:oneflow README.md .
-COPY --chown=oneflow:oneflow setup.py .
-COPY --chown=oneflow:oneflow web_server.py .
 COPY --chown=oneflow:oneflow src/ ./src/
 
 # Switch to non-root user
@@ -103,7 +103,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Default command with production-ready settings
-CMD ["uvicorn", "web_server:app", \
+CMD ["uvicorn", "src.web.app:app", \
      "--host", "0.0.0.0", \
      "--port", "8000", \
      "--workers", "4", \
@@ -111,43 +111,3 @@ CMD ["uvicorn", "web_server:app", \
      "--no-access-log", \
      "--proxy-headers", \
      "--forwarded-allow-ips", "*"]
-
-# ============================================================================
-# Build & Run Instructions:
-# 
-# Build with build arguments:
-#   docker build \
-#     --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-#     --build-arg VCS_REF=$(git rev-parse --short HEAD) \
-#     -t oneflow-ai:latest \
-#     -t oneflow-ai:2.0.0 .
-#
-# Run with environment variables:
-#   docker run -d \
-#     --name oneflow-ai \
-#     -p 8000:8000 \
-#     -e DATABASE_URL=postgresql://user:pass@host/db \
-#     -e LOG_LEVEL=info \
-#     --restart unless-stopped \
-#     --memory="2g" \
-#     --cpus="2" \
-#     --read-only \
-#     --tmpfs /tmp \
-#     --tmpfs /app/logs \
-#     --security-opt no-new-privileges:true \
-#     oneflow-ai:latest
-#
-# Run with docker-compose:
-#   docker-compose up -d
-#
-# Pull from GitHub Container Registry:
-#   docker pull ghcr.io/voroninsergei/oneflow-ai:latest
-#
-# Build for multiple platforms:
-#   docker buildx build --platform linux/amd64,linux/arm64 \
-#     -t ghcr.io/voroninsergei/oneflow-ai:latest --push .
-#
-# Scan for vulnerabilities:
-#   docker scout cve oneflow-ai:latest
-#   trivy image oneflow-ai:latest
-# ============================================================================
